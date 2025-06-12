@@ -20,14 +20,14 @@ interface DownloadModalProps {
 }
 
 type ExportFormat = 'png' | 'jpeg' | 'svg';
-type ExportQuality = 0.5 | 0.7 | 0.8 | 1.0;
+type ExportQuality = 0.5 | 0.7 | 0.8 | 0.9 | 1.0;
 
 const FORMAT_OPTIONS = [
   { 
     value: 'png' as ExportFormat, 
     label: 'PNG', 
     icon: <FileImage className="w-4 h-4" />,
-    description: 'High quality, transparent background',
+    description: 'Lossless, transparent background support',
     supportsQuality: false,
     supportsBackground: true
   },
@@ -35,7 +35,7 @@ const FORMAT_OPTIONS = [
     value: 'jpeg' as ExportFormat, 
     label: 'JPEG', 
     icon: <Image className="w-4 h-4" />,
-    description: 'Smaller file size, no transparency',
+    description: 'Smaller file size, adjustable quality',
     supportsQuality: true,
     supportsBackground: true
   },
@@ -50,10 +50,11 @@ const FORMAT_OPTIONS = [
 ];
 
 const QUALITY_OPTIONS = [
-  { value: 0.5, label: 'Low (50%)', size: 'Smallest file' },
-  { value: 0.7, label: 'Medium (70%)', size: 'Balanced' },
-  { value: 0.8, label: 'High (80%)', size: 'Good quality' },
-  { value: 1.0, label: 'Maximum (100%)', size: 'Best quality' }
+  { value: 0.5, label: 'Low (50%)', size: 'Smallest file', description: 'Basic quality, visible compression' },
+  { value: 0.7, label: 'Medium (70%)', size: 'Balanced', description: 'Good balance of size and quality' },
+  { value: 0.8, label: 'High (80%)', size: 'Good quality', description: 'High quality, minimal compression' },
+  { value: 0.9, label: 'Very High (90%)', size: 'Excellent quality', description: 'Near-lossless quality' },
+  { value: 1.0, label: 'Maximum (100%)', size: 'Best quality', description: 'Maximum quality, largest file' }
 ];
 
 const SCALE_OPTIONS = [
@@ -69,7 +70,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   mockupRef
 }) => {
   const [format, setFormat] = useState<ExportFormat>('png');
-  const [quality, setQuality] = useState<ExportQuality>(1.0);
+  const [quality, setQuality] = useState<ExportQuality>(0.9);
   const [scale, setScale] = useState(2);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [transparentBackground, setTransparentBackground] = useState(false);
@@ -77,6 +78,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   const selectedFormat = FORMAT_OPTIONS.find(f => f.value === format)!;
+  const selectedQuality = QUALITY_OPTIONS.find(q => q.value === quality)!;
 
   const handleDownload = useCallback(async () => {
     if (!mockupRef.current) return;
@@ -86,44 +88,38 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
     
     try {
       // Debug: Log element dimensions
-      console.log('Mockup element:', mockupRef.current);
-      console.log('Element dimensions:', {
-        width: mockupRef.current.scrollWidth,
-        height: mockupRef.current.scrollHeight,
-        offsetWidth: mockupRef.current.offsetWidth,
-        offsetHeight: mockupRef.current.offsetHeight,
-        clientWidth: mockupRef.current.clientWidth,
-        clientHeight: mockupRef.current.clientHeight
+      console.log('🖼️ Starting download with settings:', {
+        format,
+        quality,
+        scale,
+        transparentBackground,
+        backgroundColor,
+        element: mockupRef.current
       });
       
       // Simulate progress for user feedback
       const progressInterval = setInterval(() => {
-        setDownloadProgress(prev => Math.min(prev + 10, 90));
+        setDownloadProgress(prev => Math.min(prev + 5, 90));
       }, 100);
 
-      // Create more precise capture options
-      const options = {
-        quality: selectedFormat.supportsQuality ? quality : 1.0,
-        pixelRatio: scale,
-        backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
-        width: mockupRef.current.scrollWidth,
-        height: mockupRef.current.scrollHeight,
+      // Create high-quality capture options
+      const baseOptions = {
+        width: mockupRef.current.scrollWidth * scale,
+        height: mockupRef.current.scrollHeight * scale,
         style: {
-          // Ensure we capture only the device mockup
           transform: 'scale(1)',
           transformOrigin: 'top left',
-          // Force a clean capture by resetting any inherited styles
           position: 'relative',
           margin: '0',
           padding: '0'
         },
-        // Filter to only capture the specific element
-        filter: (node: HTMLElement) => {
-          // Ensure we only capture nodes within our mockup container
-          return mockupRef.current?.contains(node) ?? false;
-        },
         // Use cache bust to ensure fresh capture
-        cacheBust: true
+        cacheBust: true,
+        // Enable high-quality rendering
+        pixelRatio: scale,
+        // Ensure we capture the full element
+        useCORS: true,
+        allowTaint: true
       };
 
       let dataUrl: string;
@@ -131,19 +127,30 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       
       switch (format) {
         case 'png':
-          dataUrl = await toPng(mockupRef.current, options);
+          dataUrl = await toPng(mockupRef.current, {
+            ...baseOptions,
+            backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
+          });
           fileExtension = 'png';
           break;
+          
         case 'jpeg':
-          dataUrl = await toJpeg(mockupRef.current, options);
+          dataUrl = await toJpeg(mockupRef.current, {
+            ...baseOptions,
+            quality: quality,
+            backgroundColor: backgroundColor, // JPEG doesn't support transparency
+          });
           fileExtension = 'jpg';
           break;
+          
         case 'svg':
           dataUrl = await toSvg(mockupRef.current, { 
+            ...baseOptions,
             backgroundColor: transparentBackground ? 'transparent' : backgroundColor 
           });
           fileExtension = 'svg';
           break;
+          
         default:
           throw new Error('Unsupported format');
       }
@@ -151,16 +158,27 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       clearInterval(progressInterval);
       setDownloadProgress(100);
       
-      // Generate filename with format and quality info
+      // Generate descriptive filename
       const timestamp = new Date().toISOString().split('T')[0];
       const qualityStr = selectedFormat.supportsQuality ? `_q${Math.round(quality * 100)}` : '';
       const scaleStr = `_${scale}x`;
-      const filename = `mockup-${timestamp}${qualityStr}${scaleStr}.${fileExtension}`;
+      const filename = `mocupp-mockup-${timestamp}${qualityStr}${scaleStr}.${fileExtension}`;
       
+      // Create and trigger download
       const link = document.createElement('a');
       link.download = filename;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      
+      console.log('✅ Download completed:', {
+        filename,
+        format,
+        quality: selectedFormat.supportsQuality ? quality : 'N/A',
+        scale,
+        estimatedSize: `${Math.round(dataUrl.length / 1024)}KB`
+      });
       
       // Close modal after successful download
       setTimeout(() => {
@@ -170,10 +188,10 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       }, 1000);
       
     } catch (err) {
-      console.error('Failed to generate image', err);
+      console.error('Failed to generate image:', err);
       setIsDownloading(false);
       setDownloadProgress(0);
-      alert('Failed to download image. Please try again.');
+      alert('Failed to download image. Please try again with different settings.');
     }
   }, [mockupRef, format, quality, scale, backgroundColor, transparentBackground, selectedFormat, onClose]);
 
@@ -238,27 +256,43 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           {/* Quality Settings */}
           {selectedFormat.supportsQuality && (
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-900">Quality</h4>
-              <div className="grid grid-cols-2 gap-2">
+              <h4 className="text-sm font-medium text-gray-900">Quality Settings</h4>
+              <div className="space-y-2">
                 {QUALITY_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => setQuality(option.value)}
-                    className={`p-2 rounded-lg border text-center transition-all duration-150 ${
+                    className={`w-full p-3 rounded-lg border text-left transition-all duration-150 ${
                       quality === option.value
                         ? 'border-blue-200 bg-blue-50 text-blue-700'
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <p className="text-xs font-medium">{option.label}</p>
-                    <p className="text-xs text-gray-500">{option.size}</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{option.label}</p>
+                        <p className="text-xs text-gray-500">{option.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-gray-600">{option.size}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
+              </div>
+              
+              {/* Quality Preview */}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Selected Quality:</span>
+                  <span className="font-medium text-gray-900">{selectedQuality.label}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{selectedQuality.description}</p>
               </div>
             </div>
           )}
 
-          {/* Scale/Resolution */}
+          {/* Resolution Scale */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-900">Resolution Scale</h4>
             <div className="grid grid-cols-2 gap-2">
@@ -284,15 +318,17 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-gray-900">Background</h4>
               <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={transparentBackground}
-                    onChange={(e) => setTransparentBackground(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Transparent background</span>
-                </label>
+                {format === 'png' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={transparentBackground}
+                      onChange={(e) => setTransparentBackground(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Transparent background</span>
+                  </label>
+                )}
                 
                 {!transparentBackground && (
                   <div className="flex items-center gap-2">
@@ -315,6 +351,33 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Download Preview */}
+          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <h5 className="text-sm font-medium text-blue-900 mb-2">Download Preview</h5>
+            <div className="space-y-1 text-xs text-blue-700">
+              <div className="flex justify-between">
+                <span>Format:</span>
+                <span className="font-medium">{selectedFormat.label}</span>
+              </div>
+              {selectedFormat.supportsQuality && (
+                <div className="flex justify-between">
+                  <span>Quality:</span>
+                  <span className="font-medium">{Math.round(quality * 100)}%</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Resolution:</span>
+                <span className="font-medium">{scale}x scaling</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Background:</span>
+                <span className="font-medium">
+                  {transparentBackground ? 'Transparent' : backgroundColor}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -322,7 +385,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           {isDownloading ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Generating image...</span>
+                <span className="text-gray-600">Generating high-quality image...</span>
                 <span className="font-medium text-blue-600">{downloadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">

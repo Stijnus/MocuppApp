@@ -49,18 +49,41 @@ export default function FabricImageEditor({
   const canvasWidth = deviceScreenWidth;
   const canvasHeight = deviceScreenHeight;
 
-  // Initialize canvas
+  // Initialize canvas with high DPI support
   useEffect(() => {
     if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return;
+
+    // Get device pixel ratio for high DPI displays
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    
+    // Set actual canvas size in memory (scaled up for high DPI)
+    canvas.width = canvasWidth * devicePixelRatio;
+    canvas.height = canvasHeight * devicePixelRatio;
+    
+    // Scale the canvas back down using CSS
     canvas.style.width = canvasWidth + 'px';
     canvas.style.height = canvasHeight + 'px';
     
+    // Scale the drawing context so everything draws at the correct size
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Enable high-quality image rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     setCanvasReady(true);
-    console.log('📐 Canvas initialized:', { canvasWidth, canvasHeight });
+    console.log('📐 High-DPI Canvas initialized:', { 
+      canvasWidth, 
+      canvasHeight, 
+      devicePixelRatio,
+      actualWidth: canvas.width,
+      actualHeight: canvas.height
+    });
   }, [canvasWidth, canvasHeight]);
 
   // Calculate optimal scale for different fit modes
@@ -77,7 +100,7 @@ export default function FabricImageEditor({
     }
   }, [canvasWidth, canvasHeight]);
 
-  // Draw image on canvas
+  // Enhanced image drawing with high quality
   const drawImage = useCallback(() => {
     const canvas = canvasRef.current;
     const img = imageRef.current;
@@ -89,6 +112,10 @@ export default function FabricImageEditor({
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Enable high-quality rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     
     // Save context state
     ctx.save();
@@ -103,16 +130,17 @@ export default function FabricImageEditor({
     const finalScale = imageState.baseScale * imageState.scale;
     ctx.scale(finalScale, finalScale);
     
-    // Draw image centered
+    // Draw image centered with high quality
     const drawWidth = img.naturalWidth;
     const drawHeight = img.naturalHeight;
+    
     ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
     
     // Restore context state
     ctx.restore();
   }, [imageState, canvasWidth, canvasHeight]);
 
-  // Load and setup image
+  // Load and setup image with quality preservation
   useEffect(() => {
     if (!uploadedImage || !canvasReady) return;
 
@@ -120,6 +148,10 @@ export default function FabricImageEditor({
     setLoadError(null);
 
     const img = new Image();
+    
+    // Enable cross-origin for better compatibility
+    img.crossOrigin = 'anonymous';
+    
     img.onload = () => {
       imageRef.current = img;
       
@@ -138,14 +170,16 @@ export default function FabricImageEditor({
       onImageStateChange?.(newState);
       
       setIsLoading(false);
-      console.log('🖼️ Image loaded:', {
+      console.log('🖼️ High-quality image loaded:', {
         naturalSize: { width: img.naturalWidth, height: img.naturalHeight },
         baseScale,
-        fitMode
+        fitMode,
+        dataUrlLength: uploadedImage.length
       });
     };
     
-    img.onerror = () => {
+    img.onerror = (error) => {
+      console.error('Image load error:', error);
       setLoadError('Failed to load image');
       setIsLoading(false);
     };
@@ -201,7 +235,6 @@ export default function FabricImageEditor({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    console.log('🖱️ Mouse down:', { x, y, imageState });
     setIsDragging(true);
     setDragStart({ x: x - imageState.x, y: y - imageState.y });
     e.preventDefault();
@@ -219,8 +252,6 @@ export default function FabricImageEditor({
 
     const newX = x - dragStart.x;
     const newY = y - dragStart.y;
-    
-    console.log('🖱️ Mouse move:', { x, y, newX, newY, dragStart });
 
     const newState = {
       ...imageState,
@@ -275,7 +306,7 @@ export default function FabricImageEditor({
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-lg">
           <div className="text-center text-white">
             <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-            <p className="text-sm">Loading image...</p>
+            <p className="text-sm">Loading high-quality image...</p>
           </div>
         </div>
       )}
@@ -287,6 +318,7 @@ export default function FabricImageEditor({
           borderRadius: 'inherit',
           backgroundColor: 'transparent',
           cursor: isDragging ? 'grabbing' : 'grab',
+          imageRendering: 'high-quality',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

@@ -25,45 +25,61 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
     if (!file.type.startsWith('image/')) {
       return 'Please select a valid image file (JPG, PNG, GIF, WebP).';
     }
-    const maxSize = 50 * 1024 * 1024; // 50MB - increased limit
+    const maxSize = 100 * 1024 * 1024; // Increased to 100MB for high-quality images
     if (file.size > maxSize) {
-      return 'File size must be less than 50MB.';
+      return 'File size must be less than 100MB.';
     }
     return null;
   };
 
-  // Compress image if it's too large
-  const compressImage = useCallback((file: File, maxWidth: number = 2048, quality: number = 0.8): Promise<string> => {
+  // Enhanced image processing with better quality preservation
+  const processImage = useCallback((file: File, maxDimension: number = 4096, quality: number = 0.95): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
 
       img.onload = () => {
-        // Calculate new dimensions
         let { width, height } = img;
         
-        if (width > maxWidth || height > maxWidth) {
-          const ratio = Math.min(maxWidth / width, maxWidth / height);
-          width *= ratio;
-          height *= ratio;
+        // Only resize if image is larger than maxDimension
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
         }
 
+        // Set canvas size to actual dimensions
         canvas.width = width;
         canvas.height = height;
 
-        // Draw and compress
-        ctx?.drawImage(img, 0, 0, width, height);
+        // Use high-quality rendering settings
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Draw image with high quality
+          ctx.drawImage(img, 0, 0, width, height);
+        }
         
-        const compressedDataUrl = canvas.toDataURL(
-          file.type === 'image/png' ? 'image/png' : 'image/jpeg',
-          quality
-        );
+        // Determine output format and quality
+        let outputFormat = 'image/png';
+        let outputQuality = quality;
         
-        resolve(compressedDataUrl);
+        // Use original format if it's PNG or WebP, otherwise use PNG for best quality
+        if (file.type === 'image/png' || file.type === 'image/webp') {
+          outputFormat = file.type;
+        } else if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+          outputFormat = 'image/jpeg';
+        }
+        
+        // For PNG and WebP, quality parameter is ignored, so we use maximum quality
+        const processedDataUrl = canvas.toDataURL(outputFormat, outputQuality);
+        
+        resolve(processedDataUrl);
       };
 
-      img.onerror = () => reject(new Error('Failed to load image for compression'));
+      img.onerror = () => reject(new Error('Failed to load image for processing'));
       img.src = URL.createObjectURL(file);
     });
   }, []);
@@ -74,8 +90,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
       const img = new Image();
       img.onload = () => {
         resolve({
-          width: img.width,
-          height: img.height,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
           size: file.size,
           type: file.type,
           name: file.name,
@@ -113,15 +129,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
       
       let finalDataUrl: string;
       
-      // Check if compression is needed
-      const needsCompression = info.size > 5 * 1024 * 1024 || info.width > 2048 || info.height > 2048;
+      // Determine if we need to process the image
+      const needsProcessing = info.size > 10 * 1024 * 1024 || info.width > 4096 || info.height > 4096;
       
-      if (needsCompression) {
+      if (needsProcessing) {
         setProgress(50);
-        finalDataUrl = await compressImage(file, 2048, 0.85);
+        // Process with high quality settings
+        finalDataUrl = await processImage(file, 4096, 0.95);
         setProgress(80);
       } else {
-        // Use original file
+        // Use original file for smaller, high-quality images
         finalDataUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
@@ -144,6 +161,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
         dispatch({ type: 'SET_UPLOADED_IMAGE', payload: finalDataUrl });
         setUploadStatus('idle');
         setProgress(0);
+        
+        console.log('✅ Image uploaded successfully:', {
+          originalSize: `${info.width}×${info.height}`,
+          processedSize: `${testImg.width}×${testImg.height}`,
+          fileSize: formatFileSize(file.size),
+          format: info.type,
+          processed: needsProcessing
+        });
       };
       testImg.onerror = () => {
         setUploadStatus('error');
@@ -159,7 +184,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
       setTimeout(() => setUploadStatus('idle'), 5000);
       setProgress(0);
     }
-  }, [dispatch, getImageInfo, compressImage]);
+  }, [dispatch, getImageInfo, processImage]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -227,7 +252,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
             <p className="text-blue-600 font-medium">Uploading image...</p>
           )}
           {uploadStatus === 'processing' && (
-            <p className="text-blue-600 font-medium">Processing image...</p>
+            <p className="text-blue-600 font-medium">Processing high-quality image...</p>
           )}
           {uploadStatus === 'error' && (
             <p className="text-red-600 font-medium">Upload failed</p>
@@ -244,7 +269,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
           
           {uploadStatus === 'idle' && (
             <p className="text-sm text-gray-500">
-              Supports JPG, PNG, GIF, WebP up to 50MB
+              Supports JPG, PNG, GIF, WebP up to 100MB • High quality preserved
             </p>
           )}
         </div>
@@ -265,7 +290,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
         {/* Image info */}
         {imageInfo && uploadStatus === 'processing' && (
           <div className="text-xs text-gray-600 bg-white/80 rounded px-2 py-1">
-            {imageInfo.width}×{imageInfo.height} • {formatFileSize(imageInfo.size)}
+            {imageInfo.width}×{imageInfo.height} • {formatFileSize(imageInfo.size)} • {imageInfo.type}
           </div>
         )}
 
