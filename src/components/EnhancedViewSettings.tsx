@@ -11,7 +11,9 @@ import {
   Eye,
   RefreshCw,
   Settings2,
-  Zap
+  Zap,
+  Download,
+  Camera
 } from 'lucide-react';
 
 interface EnhancedViewSettingsProps {
@@ -89,6 +91,7 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [customAngle, setCustomAngle] = useState(0);
+  const [previewMode, setPreviewMode] = useState<'grid' | 'carousel'>('grid');
 
   const handleQuickPreset = (preset: typeof QUICK_PRESETS[0]) => {
     onAngleChange(preset.angle);
@@ -97,6 +100,20 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
 
   const currentAnglePreset = ANGLE_PRESETS.find(p => p.value === currentAngle);
   const currentPerspectiveOption = PERSPECTIVE_OPTIONS.find(p => p.value === currentPerspective);
+
+  // Generate preview combinations for the grid
+  const generatePreviewCombinations = () => {
+    const popularAngles: ViewAngle[] = ['front', 'angle-30', 'angle-45', 'angle--30'];
+    const perspectives: PerspectiveView[] = ['flat', 'perspective', 'isometric'];
+    
+    return popularAngles.map(angle => ({
+      angle,
+      perspective: currentPerspective,
+      isSelected: angle === currentAngle
+    }));
+  };
+
+  const previewCombinations = generatePreviewCombinations();
 
   return (
     <div className="space-y-6">
@@ -144,6 +161,133 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
         </div>
       </div>
 
+      {/* Angle Preview Grid */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-medium text-gray-900">Angle Preview</h4>
+          <div className="flex gap-1">
+            <Button
+              variant={previewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewMode('grid')}
+              className="h-7 w-7 p-0"
+            >
+              <Box className="w-3 h-3" />
+            </Button>
+            <Button
+              variant={previewMode === 'carousel' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewMode('carousel')}
+              className="h-7 w-7 p-0"
+            >
+              <Camera className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+
+        {previewMode === 'grid' ? (
+          <div className="grid grid-cols-2 gap-3">
+            {previewCombinations.map((combo) => {
+              const preset = ANGLE_PRESETS.find(p => p.value === combo.angle);
+              return (
+                <button
+                  key={combo.angle}
+                  onClick={() => onAngleChange(combo.angle)}
+                  className={`relative p-4 rounded-lg border transition-all duration-200 hover:shadow-sm ${
+                    combo.isSelected
+                      ? 'border-blue-200 bg-blue-50 ring-2 ring-blue-200/50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Mini Device Preview */}
+                  <div className="flex items-center justify-center mb-3">
+                    <div 
+                      className={`w-12 h-20 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg transform transition-all duration-300 ${
+                        currentPerspective === 'perspective' ? 'perspective-1000' : ''
+                      } ${
+                        currentPerspective === 'isometric' ? 'skew-y-1' : ''
+                      }`} 
+                      style={{
+                        transform: combo.angle === 'front' ? 'rotateY(0deg)' :
+                                  combo.angle === 'angle-15' ? 'rotateY(15deg)' :
+                                  combo.angle === 'angle-30' ? 'rotateY(30deg)' :
+                                  combo.angle === 'angle-45' ? 'rotateY(45deg)' :
+                                  combo.angle === 'angle--15' ? 'rotateY(-15deg)' :
+                                  combo.angle === 'angle--30' ? 'rotateY(-30deg)' :
+                                  combo.angle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
+                      }}
+                    >
+                      <div className="w-full h-full bg-blue-500/20 rounded-sm m-1"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-gray-900">
+                      {preset?.preview || combo.angle}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {preset?.label || 'Custom'}
+                    </p>
+                  </div>
+
+                  {combo.isSelected && (
+                    <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full"></div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Carousel Mode - Interactive Slider */}
+            <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-center mb-4">
+                <div className={`w-20 h-32 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg transform transition-all duration-500 ${
+                  currentPerspective === 'perspective' ? 'perspective-1000' : ''
+                } ${
+                  currentPerspective === 'isometric' ? 'skew-y-2' : ''
+                }`} style={{
+                  transform: currentAngle === 'front' ? 'rotateY(0deg)' :
+                            currentAngle === 'angle-15' ? 'rotateY(15deg)' :
+                            currentAngle === 'angle-30' ? 'rotateY(30deg)' :
+                            currentAngle === 'angle-45' ? 'rotateY(45deg)' :
+                            currentAngle === 'angle--15' ? 'rotateY(-15deg)' :
+                            currentAngle === 'angle--30' ? 'rotateY(-30deg)' :
+                            currentAngle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
+                }}>
+                  <div className="w-full h-full bg-blue-500/30 rounded-sm m-1"></div>
+                </div>
+              </div>
+              
+              <div className="text-center mb-4">
+                <p className="text-sm font-medium text-gray-900">
+                  {currentAnglePreset?.label || 'Custom'} • {currentPerspectiveOption?.label}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {currentAnglePreset?.preview || currentAngle}
+                </p>
+              </div>
+
+              {/* Quick Angle Buttons */}
+              <div className="flex justify-center gap-2">
+                {ANGLE_PRESETS.slice(0, 7).map((preset) => (
+                  <Button
+                    key={preset.value}
+                    variant={currentAngle === preset.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => onAngleChange(preset.value)}
+                    className="h-8 w-8 p-0"
+                    title={preset.label}
+                  >
+                    {preset.icon}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Current Settings Display */}
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-gray-900">Current Settings</h4>
@@ -166,33 +310,6 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
               {currentPerspectiveOption?.label || currentPerspective}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Live Preview */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-900">Live Preview</h4>
-        <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-center">
-            <div className={`w-16 h-24 bg-gradient-to-b from-blue-500 to-blue-600 rounded-lg shadow-lg transform transition-all duration-300 ${
-              currentPerspective === 'perspective' ? 'perspective-1000' : ''
-            } ${
-              currentPerspective === 'isometric' ? 'skew-y-3' : ''
-            }`} style={{
-              transform: currentAngle === 'front' ? 'rotateY(0deg)' :
-                        currentAngle === 'angle-15' ? 'rotateY(15deg)' :
-                        currentAngle === 'angle-30' ? 'rotateY(30deg)' :
-                        currentAngle === 'angle-45' ? 'rotateY(45deg)' :
-                        currentAngle === 'angle--15' ? 'rotateY(-15deg)' :
-                        currentAngle === 'angle--30' ? 'rotateY(-30deg)' :
-                        currentAngle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
-            }}>
-              <div className="w-full h-full bg-white/20 rounded-sm m-1"></div>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            {currentAnglePreset?.label || 'Custom'} • {currentPerspectiveOption?.label}
-          </p>
         </div>
       </div>
 

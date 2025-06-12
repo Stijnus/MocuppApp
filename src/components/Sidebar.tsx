@@ -463,7 +463,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             
             <div className="text-center">
               <p className="text-xs text-gray-500">
-                Multiple formats • Custom quality • High resolution
+                Multiple formats • Custom quality • High resolution • Any angle
               </p>
             </div>
           </div>
@@ -485,11 +485,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
       
-      {/* Download Modal */}
+      {/* Enhanced Download Modal with View Selection */}
       <DownloadModal
         isOpen={showDownloadModal}
         onClose={() => setShowDownloadModal(false)}
         mockupRef={captureRef}
+        currentAngle={viewAngle}
+        currentPerspective={perspective}
+        onAngleChange={handleAngleChange}
+        onPerspectiveChange={handlePerspectiveChange}
       />
     </div>
   );
