@@ -1,0 +1,358 @@
+import React, { useState, useCallback } from 'react';
+import { toPng, toJpeg, toSvg } from 'html-to-image';
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import {
+  Download,
+  X,
+  Image,
+  Settings,
+  FileImage,
+  Palette,
+  Maximize2,
+  Check
+} from 'lucide-react';
+
+interface DownloadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  mockupRef: React.RefObject<HTMLDivElement>;
+}
+
+type ExportFormat = 'png' | 'jpeg' | 'svg';
+type ExportQuality = 0.5 | 0.7 | 0.8 | 1.0;
+
+const FORMAT_OPTIONS = [
+  { 
+    value: 'png' as ExportFormat, 
+    label: 'PNG', 
+    icon: <FileImage className="w-4 h-4" />,
+    description: 'High quality, transparent background',
+    supportsQuality: false,
+    supportsBackground: true
+  },
+  { 
+    value: 'jpeg' as ExportFormat, 
+    label: 'JPEG', 
+    icon: <Image className="w-4 h-4" />,
+    description: 'Smaller file size, no transparency',
+    supportsQuality: true,
+    supportsBackground: true
+  },
+  { 
+    value: 'svg' as ExportFormat, 
+    label: 'SVG', 
+    icon: <Palette className="w-4 h-4" />,
+    description: 'Vector format, infinite scalability',
+    supportsQuality: false,
+    supportsBackground: false
+  }
+];
+
+const QUALITY_OPTIONS = [
+  { value: 0.5, label: 'Low (50%)', size: 'Smallest file' },
+  { value: 0.7, label: 'Medium (70%)', size: 'Balanced' },
+  { value: 0.8, label: 'High (80%)', size: 'Good quality' },
+  { value: 1.0, label: 'Maximum (100%)', size: 'Best quality' }
+];
+
+const SCALE_OPTIONS = [
+  { value: 1, label: '1x (Original)', description: 'Original size' },
+  { value: 2, label: '2x (High-DPI)', description: 'Retina displays' },
+  { value: 3, label: '3x (Ultra-HD)', description: 'Maximum quality' },
+  { value: 4, label: '4x (Print)', description: 'Print resolution' }
+];
+
+export const DownloadModal: React.FC<DownloadModalProps> = ({
+  isOpen,
+  onClose,
+  mockupRef
+}) => {
+  const [format, setFormat] = useState<ExportFormat>('png');
+  const [quality, setQuality] = useState<ExportQuality>(1.0);
+  const [scale, setScale] = useState(2);
+  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [transparentBackground, setTransparentBackground] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const selectedFormat = FORMAT_OPTIONS.find(f => f.value === format)!;
+
+  const handleDownload = useCallback(async () => {
+    if (!mockupRef.current) return;
+    
+    setIsDownloading(true);
+    setDownloadProgress(0);
+    
+    try {
+      // Debug: Log element dimensions
+      console.log('Mockup element:', mockupRef.current);
+      console.log('Element dimensions:', {
+        width: mockupRef.current.scrollWidth,
+        height: mockupRef.current.scrollHeight,
+        offsetWidth: mockupRef.current.offsetWidth,
+        offsetHeight: mockupRef.current.offsetHeight,
+        clientWidth: mockupRef.current.clientWidth,
+        clientHeight: mockupRef.current.clientHeight
+      });
+      
+      // Simulate progress for user feedback
+      const progressInterval = setInterval(() => {
+        setDownloadProgress(prev => Math.min(prev + 10, 90));
+      }, 100);
+
+      // Create more precise capture options
+      const options = {
+        quality: selectedFormat.supportsQuality ? quality : 1.0,
+        pixelRatio: scale,
+        backgroundColor: transparentBackground ? 'transparent' : backgroundColor,
+        width: mockupRef.current.scrollWidth,
+        height: mockupRef.current.scrollHeight,
+        style: {
+          // Ensure we capture only the device mockup
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          // Force a clean capture by resetting any inherited styles
+          position: 'relative',
+          margin: '0',
+          padding: '0'
+        },
+        // Filter to only capture the specific element
+        filter: (node: HTMLElement) => {
+          // Ensure we only capture nodes within our mockup container
+          return mockupRef.current?.contains(node) ?? false;
+        },
+        // Use cache bust to ensure fresh capture
+        cacheBust: true
+      };
+
+      let dataUrl: string;
+      let fileExtension: string;
+      
+      switch (format) {
+        case 'png':
+          dataUrl = await toPng(mockupRef.current, options);
+          fileExtension = 'png';
+          break;
+        case 'jpeg':
+          dataUrl = await toJpeg(mockupRef.current, options);
+          fileExtension = 'jpg';
+          break;
+        case 'svg':
+          dataUrl = await toSvg(mockupRef.current, { 
+            backgroundColor: transparentBackground ? 'transparent' : backgroundColor 
+          });
+          fileExtension = 'svg';
+          break;
+        default:
+          throw new Error('Unsupported format');
+      }
+
+      clearInterval(progressInterval);
+      setDownloadProgress(100);
+      
+      // Generate filename with format and quality info
+      const timestamp = new Date().toISOString().split('T')[0];
+      const qualityStr = selectedFormat.supportsQuality ? `_q${Math.round(quality * 100)}` : '';
+      const scaleStr = `_${scale}x`;
+      const filename = `mockup-${timestamp}${qualityStr}${scaleStr}.${fileExtension}`;
+      
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+      
+      // Close modal after successful download
+      setTimeout(() => {
+        onClose();
+        setIsDownloading(false);
+        setDownloadProgress(0);
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Failed to generate image', err);
+      setIsDownloading(false);
+      setDownloadProgress(0);
+      alert('Failed to download image. Please try again.');
+    }
+  }, [mockupRef, format, quality, scale, backgroundColor, transparentBackground, selectedFormat, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <Download className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Download Mockup</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+          {/* Format Selection */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-900">Export Format</h4>
+            <div className="grid grid-cols-1 gap-2">
+              {FORMAT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setFormat(option.value)}
+                  className={`p-3 rounded-lg border text-left transition-all duration-150 ${
+                    format === option.value
+                      ? 'border-blue-200 bg-blue-50 ring-2 ring-blue-200'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      format === option.value
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {option.icon}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm text-gray-900">{option.label}</p>
+                      <p className="text-xs text-gray-500">{option.description}</p>
+                    </div>
+                    {format === option.value && (
+                      <Check className="w-4 h-4 text-blue-600" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quality Settings */}
+          {selectedFormat.supportsQuality && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-900">Quality</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {QUALITY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setQuality(option.value)}
+                    className={`p-2 rounded-lg border text-center transition-all duration-150 ${
+                      quality === option.value
+                        ? 'border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <p className="text-xs font-medium">{option.label}</p>
+                    <p className="text-xs text-gray-500">{option.size}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Scale/Resolution */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-900">Resolution Scale</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {SCALE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setScale(option.value)}
+                  className={`p-2 rounded-lg border text-center transition-all duration-150 ${
+                    scale === option.value
+                      ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                >
+                  <p className="text-xs font-medium">{option.label}</p>
+                  <p className="text-xs text-gray-500">{option.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Background Settings */}
+          {selectedFormat.supportsBackground && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-gray-900">Background</h4>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={transparentBackground}
+                    onChange={(e) => setTransparentBackground(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Transparent background</span>
+                </label>
+                
+                {!transparentBackground && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-700">Color:</label>
+                    <input
+                      type="color"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="w-8 h-8 rounded border border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded"
+                      placeholder="#ffffff"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          {isDownloading ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Generating image...</span>
+                <span className="font-medium text-blue-600">{downloadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${downloadProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDownload}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={!mockupRef.current}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
