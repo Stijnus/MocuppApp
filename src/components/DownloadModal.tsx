@@ -112,6 +112,19 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const selectedFormat = FORMAT_OPTIONS.find(f => f.value === format)!;
   const selectedQuality = QUALITY_OPTIONS.find(q => q.value === quality)!;
 
+  // Helper function to wait for DOM updates and animations
+  const waitForViewUpdate = (duration: number = 1000): Promise<void> => {
+    return new Promise(resolve => {
+      // Force a reflow to ensure DOM is updated
+      if (mockupRef.current) {
+        mockupRef.current.offsetHeight;
+      }
+      
+      // Wait for CSS transitions to complete
+      setTimeout(resolve, duration);
+    });
+  };
+
   const handleDownload = useCallback(async () => {
     if (!mockupRef.current) return;
     
@@ -119,35 +132,36 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
     setDownloadProgress(0);
     
     try {
-      // If not using current view, temporarily change the view for download
-      let originalAngle = currentAngle;
-      let originalPerspective = currentPerspective;
+      // Store original view settings
+      const originalAngle = currentAngle;
+      const originalPerspective = currentPerspective;
       let needsViewRestore = false;
 
+      console.log('🎯 Starting download process:', {
+        useCurrentView,
+        currentView: { angle: currentAngle, perspective: currentPerspective },
+        downloadView: { angle: downloadAngle, perspective: downloadPerspective },
+        needsChange: !useCurrentView
+      });
+
+      // Change view if needed
       if (!useCurrentView && onAngleChange && onPerspectiveChange) {
+        console.log('🔄 Changing view for download...');
         needsViewRestore = true;
+        setDownloadProgress(10);
+        
+        // Apply the new view settings
         onAngleChange(downloadAngle);
         onPerspectiveChange(downloadPerspective);
         
-        // Wait for the view to update
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait longer for view changes to complete
+        console.log('⏳ Waiting for view update...');
+        await waitForViewUpdate(1500); // Increased wait time
+        setDownloadProgress(25);
       }
 
-      console.log('🖼️ Starting download with settings:', {
-        format,
-        quality,
-        scale,
-        transparentBackground,
-        backgroundColor,
-        angle: useCurrentView ? currentAngle : downloadAngle,
-        perspective: useCurrentView ? currentPerspective : downloadPerspective,
-        element: mockupRef.current
-      });
-      
-      // Simulate progress for user feedback
-      const progressInterval = setInterval(() => {
-        setDownloadProgress(prev => Math.min(prev + 5, 90));
-      }, 100);
+      console.log('📸 Starting image capture...');
+      setDownloadProgress(40);
 
       // Create high-quality capture options
       const baseOptions = {
@@ -160,18 +174,25 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           margin: '0',
           padding: '0'
         },
-        // Use cache bust to ensure fresh capture
         cacheBust: true,
-        // Enable high-quality rendering
         pixelRatio: scale,
-        // Ensure we capture the full element
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        // Add filter to ensure we capture the current state
+        filter: (node: HTMLElement) => {
+          // Skip any loading indicators or temporary elements
+          if (node.classList?.contains('loading') || node.classList?.contains('temp')) {
+            return false;
+          }
+          return true;
+        }
       };
 
       let dataUrl: string;
       let fileExtension: string;
       
+      setDownloadProgress(60);
+
       switch (format) {
         case 'png':
           dataUrl = await toPng(mockupRef.current, {
@@ -185,7 +206,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           dataUrl = await toJpeg(mockupRef.current, {
             ...baseOptions,
             quality: quality,
-            backgroundColor: backgroundColor, // JPEG doesn't support transparency
+            backgroundColor: backgroundColor,
           });
           fileExtension = 'jpg';
           break;
@@ -202,15 +223,17 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           throw new Error('Unsupported format');
       }
 
-      clearInterval(progressInterval);
-      setDownloadProgress(100);
+      setDownloadProgress(80);
       
       // Generate descriptive filename
       const timestamp = new Date().toISOString().split('T')[0];
       const qualityStr = selectedFormat.supportsQuality ? `_q${Math.round(quality * 100)}` : '';
       const scaleStr = `_${scale}x`;
-      const angleStr = useCurrentView ? '' : `_${downloadAngle.replace('angle-', '').replace('angle--', 'neg')}deg`;
-      const filename = `mocupp-mockup-${timestamp}${angleStr}${qualityStr}${scaleStr}.${fileExtension}`;
+      const viewAngle = useCurrentView ? currentAngle : downloadAngle;
+      const viewPerspective = useCurrentView ? currentPerspective : downloadPerspective;
+      const angleStr = viewAngle !== 'front' ? `_${viewAngle.replace('angle-', '').replace('angle--', 'neg')}deg` : '';
+      const perspectiveStr = viewPerspective !== 'flat' ? `_${viewPerspective}` : '';
+      const filename = `mocupp-mockup-${timestamp}${angleStr}${perspectiveStr}${qualityStr}${scaleStr}.${fileExtension}`;
       
       // Create and trigger download
       const link = document.createElement('a');
@@ -220,21 +243,24 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       link.click();
       document.body.removeChild(link);
       
+      setDownloadProgress(100);
+
       console.log('✅ Download completed:', {
         filename,
         format,
         quality: selectedFormat.supportsQuality ? quality : 'N/A',
         scale,
-        angle: useCurrentView ? currentAngle : downloadAngle,
+        viewUsed: { angle: viewAngle, perspective: viewPerspective },
         estimatedSize: `${Math.round(dataUrl.length / 1024)}KB`
       });
 
       // Restore original view if it was changed
       if (needsViewRestore && onAngleChange && onPerspectiveChange) {
+        console.log('🔄 Restoring original view...');
         setTimeout(() => {
           onAngleChange(originalAngle);
           onPerspectiveChange(originalPerspective);
-        }, 100);
+        }, 500);
       }
       
       // Close modal after successful download
@@ -245,9 +271,16 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       }, 1000);
       
     } catch (err) {
-      console.error('Failed to generate image:', err);
+      console.error('❌ Failed to generate image:', err);
       setIsDownloading(false);
       setDownloadProgress(0);
+      
+      // Restore view even if download failed
+      if (!useCurrentView && onAngleChange && onPerspectiveChange) {
+        onAngleChange(currentAngle);
+        onPerspectiveChange(currentPerspective);
+      }
+      
       alert('Failed to download image. Please try again with different settings.');
     }
   }, [mockupRef, format, quality, scale, backgroundColor, transparentBackground, selectedFormat, onClose, useCurrentView, downloadAngle, downloadPerspective, currentAngle, currentPerspective, onAngleChange, onPerspectiveChange]);
@@ -554,7 +587,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           {isDownloading ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Generating high-quality image...</span>
+                <span className="text-gray-600">
+                  {downloadProgress < 30 ? 'Preparing view...' : 
+                   downloadProgress < 70 ? 'Generating high-quality image...' : 
+                   'Finalizing download...'}
+                </span>
                 <span className="font-medium text-blue-600">{downloadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
