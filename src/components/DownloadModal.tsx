@@ -1,18 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { toPng, toJpeg, toSvg } from 'html-to-image';
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { ViewAngle, PerspectiveView } from '../types/DeviceTypes';
 import {
   Download,
   X,
   Image,
-  Settings,
   FileImage,
   Palette,
-  Maximize2,
   Check,
-  Camera,
   RotateCw,
   Monitor,
   Box,
@@ -30,7 +26,7 @@ interface DownloadModalProps {
 }
 
 type ExportFormat = 'png' | 'jpeg' | 'svg';
-type ExportQuality = 0.5 | 0.7 | 0.8 | 0.9 | 1.0;
+type ExportQuality = 0.1 | 0.2 | 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9 | 1.0;
 
 const FORMAT_OPTIONS = [
   { 
@@ -60,11 +56,11 @@ const FORMAT_OPTIONS = [
 ];
 
 const QUALITY_OPTIONS = [
-  { value: 0.5, label: 'Low (50%)', size: 'Smallest file', description: 'Basic quality, visible compression' },
-  { value: 0.7, label: 'Medium (70%)', size: 'Balanced', description: 'Good balance of size and quality' },
-  { value: 0.8, label: 'High (80%)', size: 'Good quality', description: 'High quality, minimal compression' },
-  { value: 0.9, label: 'Very High (90%)', size: 'Excellent quality', description: 'Near-lossless quality' },
-  { value: 1.0, label: 'Maximum (100%)', size: 'Best quality', description: 'Maximum quality, largest file' }
+  { value: 0.5 as ExportQuality, label: '50%' },
+  { value: 0.7 as ExportQuality, label: '70%' },
+  { value: 0.8 as ExportQuality, label: '80%' },
+  { value: 0.9 as ExportQuality, label: '90%' },
+  { value: 1.0 as ExportQuality, label: '100%' }
 ];
 
 const SCALE_OPTIONS = [
@@ -99,7 +95,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   onPerspectiveChange
 }) => {
   const [format, setFormat] = useState<ExportFormat>('png');
-  const [quality, setQuality] = useState<ExportQuality>(0.9);
+  const [quality, setQuality] = useState<ExportQuality>(0.9 as ExportQuality);
   const [scale, setScale] = useState(2);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [transparentBackground, setTransparentBackground] = useState(false);
@@ -117,15 +113,24 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
     return new Promise(resolve => {
       // Force multiple reflows to ensure DOM is updated
       if (mockupRef.current) {
-        mockupRef.current.offsetHeight;
-        mockupRef.current.scrollTop;
-        mockupRef.current.clientHeight;
+        // Force reflow on the main container multiple times
+        for (let i = 0; i < 3; i++) {
+          void mockupRef.current.offsetHeight;
+          void mockupRef.current.scrollTop;
+          void mockupRef.current.clientHeight;
+          void mockupRef.current.getBoundingClientRect();
+        }
       }
       
-      // Force style recalculation
-      const elements = mockupRef.current?.querySelectorAll('.device-mockup');
+      // Force style recalculation on all device elements
+      const elements = mockupRef.current?.querySelectorAll('.device-mockup, .device-frame, .device-screen');
       elements?.forEach(el => {
-        (el as HTMLElement).offsetHeight;
+        const htmlElement = el as HTMLElement;
+        // Force multiple reflows on each element
+        for (let i = 0; i < 3; i++) {
+          void htmlElement.offsetHeight;
+          void htmlElement.getBoundingClientRect();
+        }
       });
       
       // Wait for CSS transitions and transforms to complete
@@ -137,17 +142,25 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const forceStyleRecalculation = (): void => {
     if (!mockupRef.current) return;
     
-    // Force reflow on the main container
+    // Hide the element temporarily
     mockupRef.current.style.display = 'none';
-    mockupRef.current.offsetHeight; // Trigger reflow
+    void mockupRef.current.offsetHeight;
+    void mockupRef.current.getBoundingClientRect();
     mockupRef.current.style.display = '';
     
-    // Force reflow on device elements
-    const deviceElements = mockupRef.current.querySelectorAll('.device-mockup');
+    // Force reflow on all device elements
+    const deviceElements = mockupRef.current.querySelectorAll('.device-mockup, .device-frame, .device-screen');
     deviceElements.forEach(element => {
       const htmlElement = element as HTMLElement;
-      htmlElement.style.transform = htmlElement.style.transform; // Force re-application
-      htmlElement.offsetHeight; // Trigger reflow
+      // Re-apply transform to force recalculation
+      const currentTransform = htmlElement.style.transform;
+      htmlElement.style.transform = 'none';
+      void htmlElement.offsetHeight;
+      void htmlElement.getBoundingClientRect();
+      htmlElement.style.transform = currentTransform;
+      // Force another reflow
+      void htmlElement.offsetHeight;
+      void htmlElement.getBoundingClientRect();
     });
   };
 
@@ -182,19 +195,26 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         
         setDownloadProgress(10);
         
-        // Force style recalculation immediately
+        // Initial style recalculation
+        forceStyleRecalculation();
+        
+        // Wait for initial transform changes
+        await waitForViewUpdate(1500);
+        
+        // Force another style recalculation
         forceStyleRecalculation();
         
         // Wait longer for view changes to complete
         console.log('⏳ Waiting for view update and transforms...');
-        await waitForViewUpdate(2500); // Increased wait time even more
-        setDownloadProgress(30);
+        await waitForViewUpdate(2500);
         
-        // Force another style recalculation before capture
+        // Final style recalculation before capture
         forceStyleRecalculation();
         
-        // Additional short wait to ensure everything is settled
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Additional wait to ensure everything is settled
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setDownloadProgress(30);
       }
 
       console.log('📸 Starting image capture...');
@@ -210,10 +230,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           position: 'relative',
           margin: '0',
           padding: '0',
-          // Ensure 3D transforms are preserved
           transformStyle: 'preserve-3d',
           perspective: '1200px',
           backfaceVisibility: 'visible',
+          WebkitTransformStyle: 'preserve-3d',
+          WebkitBackfaceVisibility: 'visible',
         },
         cacheBust: true,
         pixelRatio: scale,
@@ -225,17 +246,29 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           if (node.classList?.contains('loading') || node.classList?.contains('temp')) {
             return false;
           }
+          // Ensure we capture all device-related elements
+          if (node.classList?.contains('device-mockup') || 
+              node.classList?.contains('device-frame') || 
+              node.classList?.contains('device-screen')) {
+            return true;
+          }
           return true;
         },
         // Add these options to better handle CSS transforms
         skipAutoScale: true,
         includeQueryParams: true,
+        // Ensure we capture the full transform hierarchy
+        captureArea: mockupRef.current,
       };
 
       let dataUrl: string;
       let fileExtension: string;
       
       setDownloadProgress(60);
+
+      // Force a final reflow before capture
+      forceStyleRecalculation();
+      await waitForViewUpdate(500);
 
       switch (format) {
         case 'png':
@@ -501,7 +534,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                 {QUALITY_OPTIONS.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setQuality(option.value)}
+                    onClick={() => setQuality(option.value as ExportQuality)}
                     className={`w-full p-3 rounded-lg border text-left transition-all duration-150 ${
                       quality === option.value
                         ? 'border-blue-200 bg-blue-50 text-blue-700'
@@ -511,10 +544,6 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium">{option.label}</p>
-                        <p className="text-xs text-gray-500">{option.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-medium text-gray-600">{option.size}</p>
                       </div>
                     </div>
                   </button>
@@ -527,7 +556,6 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                   <span className="text-gray-600">Selected Quality:</span>
                   <span className="font-medium text-gray-900">{selectedQuality.label}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{selectedQuality.description}</p>
               </div>
             </div>
           )}

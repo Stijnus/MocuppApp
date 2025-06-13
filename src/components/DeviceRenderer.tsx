@@ -12,7 +12,6 @@ interface DeviceRendererProps {
   viewAngle: ViewAngle;
   perspective: PerspectiveView;
   dispatch: React.Dispatch<Action>;
-  captureRef?: React.RefObject<HTMLDivElement>;
   imageState?: ImageState;
   fitMode?: FitMode;
 }
@@ -31,18 +30,9 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
   viewAngle,
   perspective,
   dispatch,
-  captureRef,
   imageState,
   fitMode
 }) => {
-  console.log('🎭 DeviceRenderer render:', {
-    deviceName: device.name,
-    hasUploadedImage: !!uploadedImage,
-    imageLength: uploadedImage?.length || 0,
-    viewAngle,
-    perspective
-  });
-
   const [layoutImageLoaded, setLayoutImageLoaded] = useState(false);
 
   const handleImageStateChange = (newImageState: ImageState) => {
@@ -60,20 +50,15 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
 
   const renderDevice = () => {
     const commonProps = {
-      ref: captureRef,
-      className: "transition-all duration-700 ease-out device-mockup",
+      className: "transition-all duration-700 ease-out device-mockup device-3d",
       style: {
         transform: transformStyle,
-        transformStyle: 'preserve-3d' as const,
         filter: `drop-shadow(${shadowStyle})`,
-        // Add these properties to ensure transforms are captured properly
         willChange: 'transform',
         backfaceVisibility: 'visible' as const,
         transformOrigin: 'center center',
-        // Force hardware acceleration for better rendering
         WebkitTransform: transformStyle,
-        WebkitTransformStyle: 'preserve-3d',
-        WebkitBackfaceVisibility: 'visible',
+        WebkitBackfaceVisibility: 'visible' as const,
       }
     };
 
@@ -93,8 +78,6 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
                 height: `${height * 4.2}px`,
                 position: 'relative',
                 zIndex: 0,
-                // Ensure the container maintains its transform
-                isolation: 'isolate',
               }}
             >
               {/* Device frame image - always on top */}
@@ -105,7 +88,6 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
                 style={{ 
                   position: 'relative', 
                   zIndex: Z_INDEX.DEVICE_FRAME,
-                  // Ensure image doesn't interfere with transforms
                   transform: 'translateZ(0)',
                   willChange: 'auto',
                 }}
@@ -126,7 +108,6 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
                   height: `${device.screen.height * 4.2}px`,
                   borderRadius: `${device.screen.cornerRadius}px`,
                   zIndex: uploadedImage ? Z_INDEX.UPLOADED_IMAGE : Z_INDEX.FILE_UPLOAD,
-                  // Ensure screen content follows the transform
                   transform: 'translateZ(1px)',
                 }}
               >
@@ -289,17 +270,8 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
   };
 
   return (
-    <div 
-      className="flex items-center justify-center min-h-[400px] p-8 relative"
-      style={{ 
-        background: 'transparent',
-        // Add perspective to the container to ensure 3D transforms work
-        perspective: '1200px',
-        perspectiveOrigin: 'center center',
-      }}
-    >
+    <div className="flex items-center justify-center min-h-[400px] p-8 relative">
       {renderDevice()}
-      
     </div>
   );
 });

@@ -148,7 +148,6 @@ function reducer(state: State, action: Action): State {
 function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const mockupRef = useRef<HTMLDivElement>(null);
-  const captureRef = useRef<HTMLDivElement>(null);
 
   const currentDevice = DEVICE_SPECS[state.selectedDevice];
 
@@ -201,7 +200,7 @@ function App() {
       {/* Sidebar */}
       <Sidebar 
         dispatch={dispatch}
-        captureRef={captureRef}
+        captureRef={mockupRef}
         viewAngle={state.viewAngle}
         perspective={state.perspective}
         currentState={{
@@ -232,11 +231,18 @@ function App() {
         <div className="flex-1 p-6">
           <div className="h-full bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-white to-purple-50/30 pointer-events-none"></div>
-            <div ref={mockupRef} className="relative z-10">
+            <div 
+              ref={mockupRef} 
+              className="relative z-10 perspective-container"
+              style={{
+                perspective: '1200px',
+                perspectiveOrigin: 'center center',
+                transformStyle: 'preserve-3d'
+              }}
+            >
               <DeviceRenderer
                 key={`${state.selectedDevice}-${state.viewAngle}-${state.perspective}`}
                 {...deviceRendererProps}
-                captureRef={captureRef}
               />
             </div>
           </div>

@@ -336,7 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 value={[currentState.imageState?.scale || 1]}
                                 min={0.5}
                                 max={2}
-                                step={0.1}
+                                step={0.01}
                                 className="flex-1"
                                 onValueChange={(value) => handleScaleChange(value[0])}
                               />
