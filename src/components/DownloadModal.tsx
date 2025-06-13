@@ -113,15 +113,41 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const selectedQuality = QUALITY_OPTIONS.find(q => q.value === quality)!;
 
   // Helper function to wait for DOM updates and animations
-  const waitForViewUpdate = (duration: number = 1000): Promise<void> => {
+  const waitForViewUpdate = (duration: number = 2000): Promise<void> => {
     return new Promise(resolve => {
-      // Force a reflow to ensure DOM is updated
+      // Force multiple reflows to ensure DOM is updated
       if (mockupRef.current) {
         mockupRef.current.offsetHeight;
+        mockupRef.current.scrollTop;
+        mockupRef.current.clientHeight;
       }
       
-      // Wait for CSS transitions to complete
+      // Force style recalculation
+      const elements = mockupRef.current?.querySelectorAll('.device-mockup');
+      elements?.forEach(el => {
+        (el as HTMLElement).offsetHeight;
+      });
+      
+      // Wait for CSS transitions and transforms to complete
       setTimeout(resolve, duration);
+    });
+  };
+
+  // Force style recalculation and ensure transforms are applied
+  const forceStyleRecalculation = (): void => {
+    if (!mockupRef.current) return;
+    
+    // Force reflow on the main container
+    mockupRef.current.style.display = 'none';
+    mockupRef.current.offsetHeight; // Trigger reflow
+    mockupRef.current.style.display = '';
+    
+    // Force reflow on device elements
+    const deviceElements = mockupRef.current.querySelectorAll('.device-mockup');
+    deviceElements.forEach(element => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.transform = htmlElement.style.transform; // Force re-application
+      htmlElement.offsetHeight; // Trigger reflow
     });
   };
 
@@ -148,22 +174,33 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       if (!useCurrentView && onAngleChange && onPerspectiveChange) {
         console.log('🔄 Changing view for download...');
         needsViewRestore = true;
-        setDownloadProgress(10);
+        setDownloadProgress(5);
         
         // Apply the new view settings
         onAngleChange(downloadAngle);
         onPerspectiveChange(downloadPerspective);
         
+        setDownloadProgress(10);
+        
+        // Force style recalculation immediately
+        forceStyleRecalculation();
+        
         // Wait longer for view changes to complete
-        console.log('⏳ Waiting for view update...');
-        await waitForViewUpdate(1500); // Increased wait time
-        setDownloadProgress(25);
+        console.log('⏳ Waiting for view update and transforms...');
+        await waitForViewUpdate(2500); // Increased wait time even more
+        setDownloadProgress(30);
+        
+        // Force another style recalculation before capture
+        forceStyleRecalculation();
+        
+        // Additional short wait to ensure everything is settled
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       console.log('📸 Starting image capture...');
       setDownloadProgress(40);
 
-      // Create high-quality capture options
+      // Create high-quality capture options with enhanced settings for CSS transforms
       const baseOptions = {
         width: mockupRef.current.scrollWidth * scale,
         height: mockupRef.current.scrollHeight * scale,
@@ -172,20 +209,27 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           transformOrigin: 'top left',
           position: 'relative',
           margin: '0',
-          padding: '0'
+          padding: '0',
+          // Ensure 3D transforms are preserved
+          transformStyle: 'preserve-3d',
+          perspective: '1200px',
+          backfaceVisibility: 'visible',
         },
         cacheBust: true,
         pixelRatio: scale,
         useCORS: true,
         allowTaint: true,
-        // Add filter to ensure we capture the current state
+        // Enhanced filter to ensure we capture the current state properly
         filter: (node: HTMLElement) => {
           // Skip any loading indicators or temporary elements
           if (node.classList?.contains('loading') || node.classList?.contains('temp')) {
             return false;
           }
           return true;
-        }
+        },
+        // Add these options to better handle CSS transforms
+        skipAutoScale: true,
+        includeQueryParams: true,
       };
 
       let dataUrl: string;
@@ -588,7 +632,8 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">
-                  {downloadProgress < 30 ? 'Preparing view...' : 
+                  {downloadProgress < 15 ? 'Preparing view...' : 
+                   downloadProgress < 40 ? 'Applying transforms...' :
                    downloadProgress < 70 ? 'Generating high-quality image...' : 
                    'Finalizing download...'}
                 </span>
