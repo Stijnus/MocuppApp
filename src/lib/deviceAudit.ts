@@ -325,7 +325,7 @@ function validateLayoutImage(device: DeviceSpecs, issues: DeviceIssue[]): void {
         suggestion: 'Ensure layout image function returns valid file paths',
       });
     }
-  } catch (error) {
+  } catch {
     issues.push({
       type: 'error',
       category: 'layout',

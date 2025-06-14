@@ -6,6 +6,7 @@ import { TopNavbar } from './components/TopNavbar';
 import { ImageState, FitMode } from './components/FabricImageEditor';
 import { ViewAngle, PerspectiveView } from './types/DeviceTypes';
 import { storageManager } from './lib/storage';
+import { OptimizedImageConfig } from './lib/imageOptimization';
 
 type State = {
   selectedDevice: string;
@@ -17,6 +18,7 @@ type State = {
   orientation: 'portrait' | 'landscape';
   imageState?: ImageState;
   fitMode: FitMode;
+  optimizationConfig?: OptimizedImageConfig;
 };
 
 export type Action =
@@ -30,7 +32,8 @@ export type Action =
   | { type: 'LOAD_SAVED_STATE'; payload: Partial<State> }
   | { type: 'SET_IMAGE_STATE'; payload: ImageState }
   | { type: 'SET_FIT_MODE'; payload: FitMode }
-  | { type: 'RESET_IMAGE_STATE' };
+  | { type: 'RESET_IMAGE_STATE' }
+  | { type: 'SET_OPTIMIZATION_CONFIG'; payload: OptimizedImageConfig };
 
 const initialState: State = {
   selectedDevice: 'iphone-16-pro-max',
@@ -42,6 +45,7 @@ const initialState: State = {
   orientation: 'portrait',
   imageState: undefined,
   fitMode: 'smart',
+  optimizationConfig: undefined,
 };
 
 function reducer(state: State, action: Action): State {
@@ -55,6 +59,8 @@ function reducer(state: State, action: Action): State {
         selectedDevice: action.payload,
         positionX: 0,
         positionY: 0,
+        imageState: undefined, // Reset image state so it re-fits to new device
+        optimizationConfig: undefined, // Reset optimization for new device
       };
     case 'SET_UPLOADED_IMAGE':
       console.log('🖼️ Setting uploaded image, length:', action.payload?.length || 0);
@@ -113,6 +119,11 @@ function reducer(state: State, action: Action): State {
         ...state,
         imageState: undefined,
       };
+    case 'SET_OPTIMIZATION_CONFIG':
+      return {
+        ...state,
+        optimizationConfig: action.payload,
+      };
     default:
       return state;
   }
@@ -159,6 +170,7 @@ function App() {
     dispatch,
     imageState: state.imageState,
     fitMode: state.fitMode,
+    optimizationConfig: state.optimizationConfig,
   }), [
     currentDevice,
     state.uploadedImage,
@@ -166,6 +178,7 @@ function App() {
     state.perspective,
     state.imageState,
     state.fitMode,
+    state.optimizationConfig,
   ]);
 
   return (
@@ -184,6 +197,7 @@ function App() {
           orientation: state.orientation,
           imageState: state.imageState,
           fitMode: state.fitMode,
+          optimizationConfig: state.optimizationConfig,
         }}
       />
       

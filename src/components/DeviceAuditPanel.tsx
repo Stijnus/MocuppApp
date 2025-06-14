@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Shield,
@@ -9,9 +9,7 @@ import {
   RefreshCw,
   Smartphone,
   Monitor,
-  Zap,
   Eye,
-  Settings,
   BarChart3,
   FileText
 } from 'lucide-react';
@@ -31,11 +29,7 @@ export const DeviceAuditPanel: React.FC = () => {
   const [isAuditing, setIsAuditing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  useEffect(() => {
-    runAudit();
-  }, []);
-
-  const runAudit = async () => {
+  const runAudit = useCallback(async () => {
     setIsAuditing(true);
     try {
       // Simulate async operation for better UX
@@ -47,7 +41,11 @@ export const DeviceAuditPanel: React.FC = () => {
     } finally {
       setIsAuditing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    runAudit();
+  }, [runAudit]);
 
   const auditSpecificDevice = (deviceId: string) => {
     const device = DEVICE_SPECS[deviceId];

@@ -6,6 +6,7 @@ import { FileUpload } from './FileUpload';
 import { DownloadModal } from './DownloadModal';
 import { ImageOptimizationPanel } from './ImageOptimizationPanel';
 import { DeviceAuditPanel } from './DeviceAuditPanel';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Action } from '../App';
 import { ViewAngle, PerspectiveView } from '../types/DeviceTypes';
 import { ImageState, FitMode } from './FabricImageEditor';
@@ -16,17 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  RefreshCw,
   FolderOpen,
   Smartphone,
   Camera,
   Upload,
   Layers3,
   CheckCircle2,
-  Settings,
   Shield,
-  Zap,
-  BarChart3
+  Zap
 } from 'lucide-react';
 
 interface EnhancedSidebarProps {
@@ -42,6 +40,7 @@ interface EnhancedSidebarProps {
     orientation: string;
     imageState?: ImageState;
     fitMode: FitMode;
+    optimizationConfig?: OptimizedImageConfig;
   };
 }
 
@@ -80,7 +79,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
 
   const handleOptimizationApply = (config: OptimizedImageConfig) => {
     console.log('🎯 Optimization applied:', config);
-    // Additional optimization logic can be added here
+    dispatch({ type: 'SET_OPTIMIZATION_CONFIG', payload: config });
   };
 
   const sidebarSections = [
@@ -139,7 +138,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
   const getTabButtonClasses = (section: typeof sidebarSections[0]) => {
     const isActive = activeSection === section.id;
     
-    const baseClasses = "group relative p-3 rounded-xl text-left transition-all duration-200 hover:shadow-sm";
+    const baseClasses = "group relative p-3 rounded-xl text-left transition-all duration-200";
     const colorClasses = {
       blue: isActive ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm' : 'hover:bg-blue-50/50',
       green: isActive ? 'bg-green-50 text-green-700 border border-green-200 shadow-sm' : 'hover:bg-green-50/50',
@@ -150,7 +149,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
     };
     
     return `${baseClasses} ${colorClasses[section.color as keyof typeof colorClasses] || colorClasses.blue} ${
-      !isActive ? 'hover:bg-gray-50/80 text-gray-700' : ''
+      !isActive ? 'hover:bg-gray-50/80 text-gray-700 hover:shadow-sm' : ''
     }`;
   };
 
@@ -234,7 +233,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
                     <h3 className="text-sm font-semibold text-gray-900">Device Model</h3>
                   </div>
                   <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                    <DeviceSelector dispatch={dispatch} />
+                    <DeviceSelector dispatch={dispatch} selectedDevice={currentState.selectedDevice} />
                   </div>
                 </div>
                 
@@ -266,6 +265,7 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
                     </div>
                   </div>
                 </div>
+
               </div>
             )}
 
@@ -276,9 +276,12 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
                   <div className="flex items-center gap-2">
                     <Upload className="w-4 h-4 text-green-600" />
                     <h3 className="text-sm font-semibold text-gray-900">Upload Screenshot</h3>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                      Optimized for {currentDevice.name}
+                    </span>
                   </div>
                   <div className="border-2 border-dashed border-gray-300 hover:border-green-400 transition-colors rounded-xl p-6 bg-white">
-                    <FileUpload dispatch={dispatch} />
+                    <FileUpload dispatch={dispatch} device={currentDevice} />
                   </div>
                 </div>
                 
@@ -314,15 +317,30 @@ export const EnhancedSidebar: React.FC<EnhancedSidebarProps> = ({
                     </span>
                   </div>
                   <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-                    <ImageOptimizationPanel
-                      uploadedImage={currentState.uploadedImage}
-                      currentDevice={currentDevice}
-                      imageState={currentState.imageState}
-                      fitMode={currentState.fitMode}
-                      onImageStateChange={handleImageStateChange}
-                      onFitModeChange={handleFitModeChange}
-                      onOptimizationApply={handleOptimizationApply}
-                    />
+                    <ErrorBoundary
+                      fallback={
+                        <div className="p-4 text-center text-red-500">
+                          <div className="text-2xl mb-2">⚠️</div>
+                          <p className="text-sm font-medium">Optimization Error</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Failed to load image optimization panel
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            Try uploading a different image or refreshing the page
+                          </p>
+                        </div>
+                      }
+                    >
+                      <ImageOptimizationPanel
+                        uploadedImage={currentState.uploadedImage}
+                        currentDevice={currentDevice}
+                        imageState={currentState.imageState}
+                        fitMode={currentState.fitMode}
+                        onImageStateChange={handleImageStateChange}
+                        onFitModeChange={handleFitModeChange}
+                        onOptimizationApply={handleOptimizationApply}
+                      />
+                    </ErrorBoundary>
                   </div>
                 </div>
               </div>

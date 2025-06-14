@@ -1,6 +1,6 @@
 export interface DeviceSpecs {
   name: string;
-  category: 'iphone' | 'ipad' | 'macbook' | 'watch';
+  category: 'iphone' | 'ipad' | 'macbook' | 'watch' | 'android';
   variant: string;
   dimensions: {
     width: number;
@@ -23,7 +23,7 @@ export interface DeviceSpecs {
     finish: 'matte' | 'glossy' | 'brushed';
   };
   features: string[];
-  layoutImage?: (orientation: 'portrait') => string;
+  layoutImage?: (orientation: 'portrait' | 'landscape') => string;
 }
 
 // Enhanced types for 3D views with negative angles

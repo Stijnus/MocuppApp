@@ -17,6 +17,8 @@ export interface ImageAnalysis {
     resolution: 'low' | 'medium' | 'high' | 'ultra';
     estimatedDPI: number;
     fileSize: number;
+    sharpness: number; // 0-1 scale
+    noise: number; // 0-1 scale
   };
   format: {
     type: string;
@@ -28,6 +30,11 @@ export interface ImageAnalysis {
     isOptimal: boolean;
     recommendations: string[];
     warnings: string[];
+  };
+  performance: {
+    renderComplexity: number; // 0-1 scale
+    memoryUsage: number; // MB
+    processingTime: number; // ms
   };
 }
 
@@ -52,9 +59,15 @@ export interface OptimizedImageConfig {
     compression: number;
     sharpening: number;
     saturation: number;
+    brightness: number;
+    contrast: number;
   };
   strategy: 'contain' | 'cover' | 'fill' | 'smart' | 'custom';
   reasoning: string;
+  performance: {
+    renderingHints: string[];
+    optimizationLevel: 'basic' | 'standard' | 'high' | 'maximum';
+  };
 }
 
 export interface DeviceFrameSpecs {
@@ -86,9 +99,11 @@ export interface DeviceFrameSpecs {
 }
 
 /**
- * Analyze uploaded image for optimization
+ * Enhanced image analysis with performance metrics
  */
 export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis> {
+  const startTime = performance.now();
+  
   return new Promise((resolve, reject) => {
     const img = new Image();
     
@@ -112,10 +127,9 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
         aspectRatio: img.width / img.height,
       };
 
-      // Estimate quality based on dimensions and file size
-      const fileSize = Math.round(imageDataUrl.length * 0.75); // Approximate file size
+      // Enhanced quality analysis
+      const fileSize = Math.round(imageDataUrl.length * 0.75);
       const pixelCount = dimensions.width * dimensions.height;
-      const bytesPerPixel = fileSize / pixelCount;
 
       let resolution: 'low' | 'medium' | 'high' | 'ultra';
       if (pixelCount < 500000) resolution = 'low';
@@ -123,7 +137,11 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
       else if (pixelCount < 8000000) resolution = 'high';
       else resolution = 'ultra';
 
-      const estimatedDPI = Math.sqrt(pixelCount) / 6; // Rough DPI estimation
+      const estimatedDPI = Math.sqrt(pixelCount) / 6;
+
+      // Advanced quality metrics
+      const sharpness = calculateImageSharpness(ctx, canvas.width, canvas.height);
+      const noise = calculateImageNoise(ctx, canvas.width, canvas.height);
 
       // Determine orientation
       let orientation: 'portrait' | 'landscape' | 'square';
@@ -135,39 +153,57 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
       const format = {
         type: imageDataUrl.split(';')[0].split(':')[1] || 'unknown',
         hasTransparency: imageDataUrl.includes('data:image/png'),
-        colorDepth: 24, // Assume 24-bit for most images
+        colorDepth: 24,
       };
 
-      // Compatibility analysis
+      // Performance analysis
+      const renderComplexity = calculateRenderComplexity(dimensions, format, sharpness);
+      const memoryUsage = calculateMemoryUsage(dimensions);
+      const processingTime = performance.now() - startTime;
+
+      // Enhanced compatibility analysis
       const recommendations: string[] = [];
       const warnings: string[] = [];
       let isOptimal = true;
 
-      // Check resolution
+      // Resolution checks
       if (resolution === 'low') {
-        warnings.push('Low resolution image may appear pixelated on high-DPI displays');
-        recommendations.push('Use an image with at least 1080p resolution for best quality');
+        warnings.push('Low resolution may appear pixelated on high-DPI displays');
+        recommendations.push('Use at least 1080p resolution for optimal quality');
         isOptimal = false;
       }
 
-      // Check aspect ratio for mobile compatibility
-      const mobileAspectRatio = 19.5 / 9; // Modern phone aspect ratio
+      // Sharpness checks
+      if (sharpness < 0.3) {
+        warnings.push('Image appears blurry or out of focus');
+        recommendations.push('Use a sharper image or apply sharpening filter');
+        isOptimal = false;
+      }
+
+      // Noise checks
+      if (noise > 0.7) {
+        warnings.push('High noise levels detected in image');
+        recommendations.push('Consider noise reduction or use a cleaner image');
+      }
+
+      // File size optimization
+      if (fileSize > 10 * 1024 * 1024) {
+        warnings.push('Large file size may impact performance');
+        recommendations.push('Compress image to reduce loading time');
+      }
+
+      // Aspect ratio compatibility
+      const mobileAspectRatio = 19.5 / 9;
       const aspectRatioDiff = Math.abs(dimensions.aspectRatio - mobileAspectRatio);
       
       if (aspectRatioDiff > 0.5) {
-        recommendations.push('Consider cropping to match device aspect ratios for better fit');
+        recommendations.push('Consider cropping to match device aspect ratios');
       }
 
-      // Check file size
-      if (fileSize > 10 * 1024 * 1024) { // 10MB
-        warnings.push('Large file size may impact performance');
-        recommendations.push('Consider compressing the image to reduce file size');
-      }
-
-      // Check for very wide or tall images
+      // Extreme dimensions check
       if (dimensions.aspectRatio > 3 || dimensions.aspectRatio < 0.33) {
-        warnings.push('Extreme aspect ratio may not display well on device frames');
-        recommendations.push('Consider cropping to a more standard aspect ratio');
+        warnings.push('Extreme aspect ratio may not display well');
+        recommendations.push('Consider cropping to standard aspect ratio');
         isOptimal = false;
       }
 
@@ -177,6 +213,8 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
           resolution,
           estimatedDPI,
           fileSize,
+          sharpness,
+          noise,
         },
         format,
         orientation,
@@ -184,6 +222,11 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
           isOptimal,
           recommendations,
           warnings,
+        },
+        performance: {
+          renderComplexity,
+          memoryUsage,
+          processingTime,
         },
       };
 
@@ -199,19 +242,128 @@ export async function analyzeImage(imageDataUrl: string): Promise<ImageAnalysis>
 }
 
 /**
+ * Calculate image sharpness using edge detection
+ */
+function calculateImageSharpness(ctx: CanvasRenderingContext2D, width: number, height: number): number {
+  // Sample a smaller area for performance
+  const sampleSize = Math.min(200, Math.min(width, height));
+  const sampleX = (width - sampleSize) / 2;
+  const sampleY = (height - sampleSize) / 2;
+  
+  const imageData = ctx.getImageData(sampleX, sampleY, sampleSize, sampleSize);
+  const data = imageData.data;
+  
+  let sharpness = 0;
+  let count = 0;
+  
+  // Simple edge detection using gradient magnitude
+  for (let y = 1; y < sampleSize - 1; y++) {
+    for (let x = 1; x < sampleSize - 1; x++) {
+      const idx = (y * sampleSize + x) * 4;
+      
+      // Convert to grayscale
+      const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+      const grayRight = (data[idx + 4] + data[idx + 5] + data[idx + 6]) / 3;
+      const grayDown = (data[idx + sampleSize * 4] + data[idx + sampleSize * 4 + 1] + data[idx + sampleSize * 4 + 2]) / 3;
+      
+      // Calculate gradient
+      const gradX = Math.abs(grayRight - gray);
+      const gradY = Math.abs(grayDown - gray);
+      const magnitude = Math.sqrt(gradX * gradX + gradY * gradY);
+      
+      sharpness += magnitude;
+      count++;
+    }
+  }
+  
+  return Math.min(1, (sharpness / count) / 50); // Normalize to 0-1
+}
+
+/**
+ * Calculate image noise level
+ */
+function calculateImageNoise(ctx: CanvasRenderingContext2D, width: number, height: number): number {
+  // Sample a smaller area for performance
+  const sampleSize = Math.min(100, Math.min(width, height));
+  const sampleX = (width - sampleSize) / 2;
+  const sampleY = (height - sampleSize) / 2;
+  
+  const imageData = ctx.getImageData(sampleX, sampleY, sampleSize, sampleSize);
+  const data = imageData.data;
+  
+  let variance = 0;
+  let mean = 0;
+  let count = 0;
+  
+  // Calculate mean
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    mean += gray;
+    count++;
+  }
+  mean /= count;
+  
+  // Calculate variance
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    variance += Math.pow(gray - mean, 2);
+  }
+  variance /= count;
+  
+  return Math.min(1, Math.sqrt(variance) / 50); // Normalize to 0-1
+}
+
+/**
+ * Calculate rendering complexity
+ */
+function calculateRenderComplexity(
+  dimensions: { width: number; height: number },
+  format: { hasTransparency: boolean; colorDepth: number },
+  sharpness: number
+): number {
+  const pixelCount = dimensions.width * dimensions.height;
+  const baseComplexity = Math.min(1, pixelCount / 8000000); // Normalize by 8MP
+  
+  let complexity = baseComplexity;
+  if (format.hasTransparency) complexity += 0.1;
+  if (format.colorDepth > 24) complexity += 0.1;
+  if (sharpness > 0.8) complexity += 0.1; // High detail images are more complex
+  
+  return Math.min(1, complexity);
+}
+
+/**
+ * Calculate memory usage
+ */
+function calculateMemoryUsage(dimensions: { width: number; height: number }): number {
+  const pixelCount = dimensions.width * dimensions.height;
+  const bytesPerPixel = 4; // RGBA
+  return (pixelCount * bytesPerPixel) / (1024 * 1024); // MB
+}
+
+/**
  * Generate device frame specifications from DeviceSpecs
  */
 export function generateDeviceFrameSpecs(device: DeviceSpecs): DeviceFrameSpecs {
-  const displayScale = 4.2; // Standard display scaling
+  const displayScale = 3; // Match DeviceRenderer DEVICE_SCALE
   
+  // Calculate proper corner radius based on screen size (match DeviceRenderer calculation)
+  const screenWidth = device.screen.width * displayScale;
+  const screenHeight = device.screen.height * displayScale;
+  const cornerRadius = Math.min(screenWidth, screenHeight) * 0.08; // 8% of smaller dimension
+  
+  // Use actual pixel resolution for proper recommendations
+  const pixelWidth = device.screen.resolution.width;
+  const pixelHeight = device.screen.resolution.height;
+
   return {
     id: device.name.toLowerCase().replace(/\s+/g, '-'),
     name: device.name,
     viewport: {
-      width: device.screen.width,
+      width: device.screen.width,  // Keep physical dimensions for layout
       height: device.screen.height,
       aspectRatio: device.screen.width / device.screen.height,
-      cornerRadius: device.screen.cornerRadius,
+      cornerRadius: cornerRadius / displayScale,
     },
     frame: {
       totalWidth: device.dimensions.width,
@@ -226,16 +378,16 @@ export function generateDeviceFrameSpecs(device: DeviceSpecs): DeviceFrameSpecs 
     displayScale,
     optimalResolutions: {
       min: {
-        width: Math.round(device.screen.width * 1.5),
-        height: Math.round(device.screen.height * 1.5),
+        width: Math.round(pixelWidth * 0.75),  // 75% of native resolution
+        height: Math.round(pixelHeight * 0.75),
       },
       recommended: {
-        width: Math.round(device.screen.width * 2.5),
-        height: Math.round(device.screen.height * 2.5),
+        width: pixelWidth,  // Native resolution
+        height: pixelHeight,
       },
       max: {
-        width: Math.round(device.screen.width * 4),
-        height: Math.round(device.screen.height * 4),
+        width: Math.round(pixelWidth * 2),  // 2x native resolution
+        height: Math.round(pixelHeight * 2),
       },
     },
     features: device.features || [],
@@ -243,7 +395,7 @@ export function generateDeviceFrameSpecs(device: DeviceSpecs): DeviceFrameSpecs 
 }
 
 /**
- * Calculate optimal image configuration for a device frame
+ * Enhanced optimal image configuration calculation
  */
 export function calculateOptimalImageConfig(
   imageAnalysis: ImageAnalysis,
@@ -257,12 +409,15 @@ export function calculateOptimalImageConfig(
   const canvasWidth = viewport.width * deviceFrame.displayScale;
   const canvasHeight = viewport.height * deviceFrame.displayScale;
   
+  // Calculate aspect ratio difference (used in multiple places)
+  const aspectRatioDiff = Math.abs(imgDim.aspectRatio - viewport.aspectRatio);
+  
   let scale: number;
   let actualStrategy: typeof strategy;
   let reasoning: string;
   let crop: OptimizedImageConfig['crop'] = null;
 
-  // Determine optimal strategy
+  // Enhanced strategy determination with performance considerations
   switch (strategy) {
     case 'contain':
       scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.95;
@@ -277,26 +432,32 @@ export function calculateOptimalImageConfig(
       break;
 
     case 'fill':
-      scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height);
-      actualStrategy = 'fill';
-      reasoning = 'Fill viewport exactly, may distort aspect ratio';
+      scale = Math.max(canvasWidth / imgDim.width, canvasHeight / imgDim.height);
+      actualStrategy = 'cover'; // Fill acts like cover for better visual results
+      reasoning = 'Fill viewport completely without distortion';
       break;
 
     case 'smart':
-    default:
-      const aspectRatioDiff = Math.abs(imgDim.aspectRatio - viewport.aspectRatio);
+    default: {
       const isHighRes = imageAnalysis.quality.resolution === 'high' || imageAnalysis.quality.resolution === 'ultra';
+      const isHighQuality = imageAnalysis.quality.sharpness > 0.6 && imageAnalysis.quality.noise < 0.4;
+      const isLowComplexity = imageAnalysis.performance.renderComplexity < 0.5;
       
-      if (aspectRatioDiff < 0.1 && isHighRes) {
+      if (aspectRatioDiff < 0.05 && isHighRes && isHighQuality) {
+        // Perfect match with high quality - use cover for maximum impact
+        scale = Math.max(canvasWidth / imgDim.width, canvasHeight / imgDim.height);
+        actualStrategy = 'cover';
+        reasoning = 'Perfect aspect ratio match with high quality - using cover for maximum impact';
+      } else if (aspectRatioDiff < 0.1 && isHighRes) {
         // Very similar aspect ratios with high resolution - use cover
         scale = Math.max(canvasWidth / imgDim.width, canvasHeight / imgDim.height);
         actualStrategy = 'cover';
         reasoning = 'Similar aspect ratios with high resolution - using cover for optimal fill';
-      } else if (aspectRatioDiff < 0.3) {
-        // Moderately similar aspect ratios - use smart cover with slight padding
+      } else if (aspectRatioDiff < 0.3 && isLowComplexity) {
+        // Moderately similar aspect ratios with low complexity - use smart cover
         scale = Math.max(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.98;
         actualStrategy = 'cover';
-        reasoning = 'Good aspect ratio match - using cover with minimal padding';
+        reasoning = 'Good aspect ratio match with low complexity - using cover with minimal padding';
       } else if (imgDim.aspectRatio > viewport.aspectRatio * 1.5) {
         // Very wide image - use contain with more padding
         scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.9;
@@ -307,6 +468,11 @@ export function calculateOptimalImageConfig(
         scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.95;
         actualStrategy = 'contain';
         reasoning = 'Tall image - using contain to show full height';
+      } else if (!isHighQuality) {
+        // Lower quality image - use contain to avoid magnifying artifacts
+        scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.92;
+        actualStrategy = 'contain';
+        reasoning = 'Lower quality image - using contain to minimize artifacts';
       } else {
         // Default case - use contain with standard padding
         scale = Math.min(canvasWidth / imgDim.width, canvasHeight / imgDim.height) * 0.95;
@@ -314,57 +480,53 @@ export function calculateOptimalImageConfig(
         reasoning = 'Default strategy - contain with padding for safe display';
       }
       break;
+    }
   }
 
-  // Ensure reasonable scale limits
-  scale = Math.max(0.1, Math.min(scale, 4));
+  // Enhanced scale limits with quality considerations
+  const minScale = imageAnalysis.quality.sharpness > 0.7 ? 0.1 : 0.2; // Allow smaller scale for sharp images
+  const maxScale = imageAnalysis.quality.resolution === 'ultra' ? 6 : 4; // Allow larger scale for ultra-high res
+  scale = Math.max(minScale, Math.min(scale, maxScale));
 
-  // Calculate intelligent cropping for cover strategy
-  if (actualStrategy === 'cover' && aspectRatioDiff > 0.2) {
+  // Enhanced intelligent cropping with focus detection
+  if (actualStrategy === 'cover' && aspectRatioDiff > 0.15) {
     const scaledWidth = imgDim.width * scale;
     const scaledHeight = imgDim.height * scale;
     
     if (scaledWidth > canvasWidth) {
-      // Crop horizontally - focus on center
+      // Crop horizontally - use smart focus detection
       const cropWidth = canvasWidth / scale;
+      const focusX = detectHorizontalFocus(imageAnalysis);
       crop = {
-        x: (imgDim.width - cropWidth) / 2,
+        x: Math.max(0, Math.min(imgDim.width - cropWidth, focusX - cropWidth / 2)),
         y: 0,
         width: cropWidth,
         height: imgDim.height,
       };
     } else if (scaledHeight > canvasHeight) {
-      // Crop vertically - focus on upper portion (better for UI screenshots)
+      // Crop vertically - use smart focus detection
       const cropHeight = canvasHeight / scale;
+      const focusY = detectVerticalFocus(imageAnalysis);
       crop = {
         x: 0,
-        y: Math.max(0, (imgDim.height - cropHeight) * 0.3), // 30% from top
+        y: Math.max(0, Math.min(imgDim.height - cropHeight, focusY - cropHeight / 2)),
         width: imgDim.width,
         height: cropHeight,
       };
     }
   }
 
-  // Calculate position (center by default)
-  const position = {
-    x: canvasWidth / 2,
-    y: canvasHeight / 2,
-  };
+  // Enhanced positioning with viewport optimization
+  const position = calculateOptimalPosition(canvasWidth, canvasHeight, crop);
 
-  // Quality adjustments based on image analysis
-  let compression = 0.95;
-  let sharpening = 0;
-  let saturation = 1;
+  // Enhanced quality adjustments based on comprehensive analysis
+  const qualityConfig = calculateQualityAdjustments(imageAnalysis, scale, actualStrategy);
 
-  if (imageAnalysis.quality.resolution === 'low') {
-    sharpening = 0.2; // Add slight sharpening for low-res images
-  }
+  // Performance optimization hints
+  const renderingHints = generateRenderingHints(imageAnalysis, scale, actualStrategy);
+  const optimizationLevel = determineOptimizationLevel(imageAnalysis, scale);
 
-  if (scale > 2) {
-    compression = 0.9; // Reduce compression for heavily scaled images
-  }
-
-  return {
+  const result = {
     scale,
     position,
     crop,
@@ -373,14 +535,190 @@ export function calculateOptimalImageConfig(
       flipX: false,
       flipY: false,
     },
-    quality: {
-      compression,
-      sharpening,
-      saturation,
-    },
+    quality: qualityConfig,
     strategy: actualStrategy,
     reasoning,
+    performance: {
+      renderingHints,
+      optimizationLevel,
+    },
   };
+
+  console.log('🔧 Calculated optimization config:', {
+    inputStrategy: strategy,
+    outputStrategy: actualStrategy,
+    scale,
+    position,
+    hasCrop: crop !== null,
+    qualityConfig,
+    reasoning
+  });
+
+  return result;
+}
+
+/**
+ * Detect horizontal focus point for smart cropping
+ */
+function detectHorizontalFocus(imageAnalysis: ImageAnalysis): number {
+  // For now, use rule of thirds as default
+  // In the future, this could use actual content analysis
+  const { width } = imageAnalysis.dimensions;
+  
+  // Check if image is likely a UI screenshot (common case)
+  if (imageAnalysis.dimensions.aspectRatio > 1.5) {
+    return width * 0.5; // Center for wide UI screenshots
+  }
+  
+  // Use rule of thirds for other images
+  return width * 0.33;
+}
+
+/**
+ * Detect vertical focus point for smart cropping
+ */
+function detectVerticalFocus(imageAnalysis: ImageAnalysis): number {
+  const { height } = imageAnalysis.dimensions;
+  
+  // For UI screenshots, focus on upper portion
+  if (imageAnalysis.dimensions.aspectRatio < 0.8) {
+    return height * 0.25; // Upper quarter for tall UI screenshots
+  }
+  
+  // Use rule of thirds for other images
+  return height * 0.33;
+}
+
+/**
+ * Calculate optimal position considering crop and scale
+ */
+function calculateOptimalPosition(
+  canvasWidth: number,
+  canvasHeight: number,
+  crop: OptimizedImageConfig['crop']
+): { x: number; y: number } {
+  if (crop) {
+    // Position cropped image to center the visible area
+    return {
+      x: canvasWidth / 2,
+      y: canvasHeight / 2,
+    };
+  }
+  
+  // Standard centering for non-cropped images
+  return {
+    x: canvasWidth / 2,
+    y: canvasHeight / 2,
+  };
+}
+
+/**
+ * Calculate quality adjustments based on image analysis
+ */
+function calculateQualityAdjustments(
+  imageAnalysis: ImageAnalysis,
+  scale: number,
+  strategy: string
+): OptimizedImageConfig['quality'] {
+  let compression = 0.95;
+  let sharpening = 0;
+  let saturation = 1;
+  const brightness = 1;
+  let contrast = 1;
+
+  // Adjust based on image quality
+  if (imageAnalysis.quality.resolution === 'low') {
+    sharpening = 0.3; // More aggressive sharpening for low-res
+    contrast = 1.1; // Slight contrast boost
+  } else if (imageAnalysis.quality.sharpness < 0.4) {
+    sharpening = 0.2; // Moderate sharpening for blurry images
+  }
+
+  // Adjust based on noise levels
+  if (imageAnalysis.quality.noise > 0.6) {
+    sharpening = Math.max(0, sharpening - 0.1); // Reduce sharpening for noisy images
+    compression = 0.9; // Higher compression to reduce noise artifacts
+  }
+
+  // Adjust based on scaling
+  if (scale > 2) {
+    compression = 0.9; // Reduce compression for heavily scaled images
+    sharpening = Math.min(0.4, sharpening + 0.1); // Add sharpening for upscaled images
+  } else if (scale < 0.5) {
+    compression = 0.98; // Higher compression for downscaled images
+  }
+
+  // Strategy-specific adjustments
+  if (strategy === 'cover') {
+    saturation = 1.05; // Slight saturation boost for cover images
+    contrast = 1.02; // Slight contrast boost
+  }
+
+  return {
+    compression,
+    sharpening,
+    saturation,
+    brightness,
+    contrast,
+  };
+}
+
+/**
+ * Generate rendering hints for performance optimization
+ */
+function generateRenderingHints(
+  imageAnalysis: ImageAnalysis,
+  scale: number,
+  strategy: string
+): string[] {
+  const hints: string[] = [];
+  
+  if (imageAnalysis.performance.renderComplexity > 0.7) {
+    hints.push('high-complexity');
+  }
+  
+  if (scale > 2) {
+    hints.push('upscaling');
+  }
+  
+  if (scale < 0.5) {
+    hints.push('downscaling');
+  }
+  
+  if (imageAnalysis.quality.sharpness < 0.3) {
+    hints.push('blur-compensation');
+  }
+  
+  if (imageAnalysis.quality.noise > 0.6) {
+    hints.push('noise-reduction');
+  }
+  
+  if (strategy === 'cover') {
+    hints.push('crop-optimization');
+  }
+  
+  return hints;
+}
+
+/**
+ * Determine optimization level based on image characteristics
+ */
+function determineOptimizationLevel(
+  imageAnalysis: ImageAnalysis,
+  scale: number
+): 'basic' | 'standard' | 'high' | 'maximum' {
+  let score = 0;
+  
+  if (imageAnalysis.performance.renderComplexity > 0.5) score += 1;
+  if (imageAnalysis.quality.resolution === 'ultra') score += 1;
+  if (scale > 1.5) score += 1;
+  if (imageAnalysis.quality.sharpness < 0.4) score += 1;
+  if (imageAnalysis.quality.noise > 0.5) score += 1;
+  
+  if (score >= 4) return 'maximum';
+  if (score >= 3) return 'high';
+  if (score >= 2) return 'standard';
+  return 'basic';
 }
 
 /**

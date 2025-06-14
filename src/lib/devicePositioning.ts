@@ -210,6 +210,29 @@ export function checkDeviceCompatibility(device: DeviceSpecs): DeviceCompatibili
     } else {
       notes.push('Standard model');
     }
+  } else if (device.category === 'android') {
+    if (device.variant === 'Ultra') {
+      notes.push('Ultra flagship - large screen with S Pen support');
+      recommendedStrategy = 'cover';
+    } else if (device.variant === 'Pro XL' || device.variant === 'Plus') {
+      notes.push('Large Android flagship - excellent for showcasing content');
+      recommendedStrategy = 'cover';
+    } else if (device.variant === 'Pro') {
+      notes.push('Pro Android model with advanced camera features');
+    } else {
+      notes.push('Standard Android model');
+    }
+    
+    // Android-specific features
+    if (device.features?.includes('s-pen')) {
+      notes.push('S Pen support - great for productivity apps');
+    }
+    if (device.features?.includes('magic-eraser')) {
+      notes.push('Google AI features - ideal for photo editing apps');
+    }
+    if (device.features?.includes('always-on-display')) {
+      notes.push('Always-on display - consider widget/notification layouts');
+    }
   }
   
   if (hasDynamicIsland) {
@@ -218,6 +241,8 @@ export function checkDeviceCompatibility(device: DeviceSpecs): DeviceCompatibili
   
   if (device.screen.cornerRadius > 50) {
     notes.push('Large corner radius - ensure content fits within rounded corners');
+  } else if (device.screen.cornerRadius > 20) {
+    notes.push('Moderate corner radius - Android style rounded corners');
   }
   
   if (!hasLayoutImage) {
@@ -225,7 +250,7 @@ export function checkDeviceCompatibility(device: DeviceSpecs): DeviceCompatibili
   }
   
   return {
-    isSupported: device.category === 'iphone', // Currently only iPhone is supported
+    isSupported: device.category === 'iphone' || device.category === 'android', // Support both iPhone and Android
     hasLayoutImage,
     screenType,
     recommendedStrategy,

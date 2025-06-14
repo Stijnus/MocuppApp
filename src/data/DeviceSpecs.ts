@@ -15,7 +15,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'titanium', back: 'glass', finish: 'matte' },
     features: ['dynamic-island', 'action-button', 'usb-c', 'triple-camera', 'camera-control', 'always-on-display'],
-    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Pro Max/iPhone 16 Pro Max - Black Titanium - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Pro Max/iPhone 16 Pro Max - Black Titanium - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-16-pro': {
     name: 'iPhone 16 Pro',
@@ -31,7 +31,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'titanium', back: 'glass', finish: 'matte' },
     features: ['dynamic-island', 'action-button', 'usb-c', 'triple-camera', 'camera-control', 'always-on-display'],
-    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Pro/iPhone 16 Pro - Black Titanium - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Pro/iPhone 16 Pro - Black Titanium - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-16-plus': {
     name: 'iPhone 16 Plus',
@@ -47,7 +47,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'aluminum', back: 'glass', finish: 'glossy' },
     features: ['dynamic-island', 'usb-c', 'dual-camera'],
-    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Plus/iPhone 16 Plus - Black - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16 Plus/iPhone 16 Plus - Black - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-16': {
     name: 'iPhone 16',
@@ -63,7 +63,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'aluminum', back: 'glass', finish: 'glossy' },
     features: ['dynamic-island', 'usb-c', 'dual-camera'],
-    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16/iPhone 16 - Black - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 16 models/iPhone 16/iPhone 16 - Black - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-15-pro-max': {
     name: 'iPhone 15 Pro Max',
@@ -79,7 +79,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'titanium', back: 'glass', finish: 'matte' },
     features: ['dynamic-island', 'action-button', 'usb-c', 'triple-camera', 'always-on-display'],
-    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Pro Max/iPhone 15 Pro Max - Black Titanium - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Pro Max/iPhone 15 Pro Max - Black Titanium - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-15-pro': {
     name: 'iPhone 15 Pro',
@@ -95,7 +95,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'titanium', back: 'glass', finish: 'matte' },
     features: ['dynamic-island', 'action-button', 'usb-c', 'triple-camera', 'always-on-display'],
-    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Pro/iPhone 15 Pro - Black Titanium - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Pro/iPhone 15 Pro - Black Titanium - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-15-plus': {
     name: 'iPhone 15 Plus',
@@ -111,7 +111,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'aluminum', back: 'glass', finish: 'glossy' },
     features: ['dynamic-island', 'usb-c', 'dual-camera'],
-    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Plus/iPhone 15 Plus - Black - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15 Plus/iPhone 15 Plus - Black - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
   'iphone-15': {
     name: 'iPhone 15',
@@ -127,7 +127,7 @@ export const DEVICE_SPECS: Record<string, DeviceSpecs> = {
     },
     materials: { frame: 'aluminum', back: 'glass', finish: 'glossy' },
     features: ['dynamic-island', 'usb-c', 'dual-camera'],
-    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15/iPhone 15 - Black - ${orientation.charAt(0).toUpperCase() + orientation.slice(1)}.png`,
+    layoutImage: (orientation) => `/apple/iphone 15 models/iPhone 15/iPhone 15 - Black - ${orientation === 'portrait' ? 'Portrait' : 'Landscape'}.png`,
   },
 };
 

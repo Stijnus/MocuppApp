@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Settings2,
   Zap,
-  Download,
   Camera
 } from 'lucide-react';
 
@@ -104,7 +103,6 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
   // Generate preview combinations for the grid
   const generatePreviewCombinations = () => {
     const popularAngles: ViewAngle[] = ['front', 'angle-30', 'angle-45', 'angle--30'];
-    const perspectives: PerspectiveView[] = ['flat', 'perspective', 'isometric'];
     
     return popularAngles.map(angle => ({
       angle,

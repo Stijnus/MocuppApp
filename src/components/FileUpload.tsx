@@ -2,9 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { Action } from '../App';
+import { DeviceSpecs } from '../types/DeviceTypes';
 
 interface FileUploadProps {
   dispatch: React.Dispatch<Action>;
+  device?: DeviceSpecs;
 }
 
 interface ImageInfo {
@@ -15,7 +17,7 @@ interface ImageInfo {
   name: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ dispatch, device }) => {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [imageInfo, setImageInfo] = useState<ImageInfo | null>(null);
@@ -32,7 +34,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
     return null;
   };
 
-  // Enhanced image processing with better quality preservation
+  // Enhanced image processing with device-aware optimization
   const processImage = useCallback((file: File, maxDimension: number = 4096, quality: number = 0.95): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -41,6 +43,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
 
       img.onload = () => {
         let { width, height } = img;
+        
+        // Consider device screen aspect ratio for optimal processing
+        if (device?.screen) {
+          const deviceAspectRatio = device.screen.width / device.screen.height;
+          const imageAspectRatio = width / height;
+          
+          // If aspect ratios are very different, we might want to optimize differently
+          const aspectRatioDiff = Math.abs(deviceAspectRatio - imageAspectRatio);
+          
+          // For images with very different aspect ratios, use a more conservative max dimension
+          if (aspectRatioDiff > 0.5) {
+            maxDimension = Math.min(maxDimension, 3072); // Reduce max dimension for better performance
+          }
+        }
         
         // Only resize if image is larger than maxDimension
         if (width > maxDimension || height > maxDimension) {
@@ -64,7 +80,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
         
         // Determine output format and quality
         let outputFormat = 'image/png';
-        let outputQuality = quality;
+        const outputQuality = quality;
         
         // Use original format if it's PNG or WebP, otherwise use PNG for best quality
         if (file.type === 'image/png' || file.type === 'image/webp') {
@@ -82,7 +98,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
       img.onerror = () => reject(new Error('Failed to load image for processing'));
       img.src = URL.createObjectURL(file);
     });
-  }, []);
+  }, [device]);
 
   // Get image information
   const getImageInfo = useCallback((file: File): Promise<ImageInfo> => {
@@ -269,7 +285,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ dispatch }) => {
           
           {uploadStatus === 'idle' && (
             <p className="text-sm text-gray-500">
-              Supports JPG, PNG, GIF, WebP up to 100MB • High quality preserved
+              Supports JPG, PNG, GIF, WebP up to 100MB • Optimized for {device?.name || 'selected device'}
             </p>
           )}
         </div>

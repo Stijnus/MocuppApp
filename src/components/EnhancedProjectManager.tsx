@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { storageManager, StoredProject } from '../lib/storage';
 import { Action } from '../App';
 import { ViewAngle, PerspectiveView } from '../types/DeviceTypes';
@@ -14,15 +14,9 @@ import {
   Clock,
   Smartphone,
   Image,
-  Eye,
-  MoreVertical,
-  Edit3,
   Copy,
-  Star,
-  Archive,
   Grid3X3,
   List,
-  Filter,
   CheckSquare,
   Square,
   X
@@ -54,13 +48,9 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterBy, setFilterBy] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const loadProjects = () => {
+  const loadProjects = useCallback(() => {
     const savedProjects = storageManager.loadProjects();
-    let sortedProjects = [...savedProjects];
+    const sortedProjects = [...savedProjects];
     
     switch (sortBy) {
       case 'name':
@@ -76,7 +66,11 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
     }
     
     setProjects(sortedProjects);
-  };
+  }, [sortBy]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   const saveCurrentProject = async () => {
     if (!projectName.trim()) {
@@ -95,7 +89,6 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
 
       const projectId = storageManager.saveProject({
         name: projectName.trim(),
-        description: projectDescription.trim(),
         deviceConfig: {
           selectedDevice: currentState.selectedDevice,
           viewAngle: currentState.viewAngle,
@@ -162,9 +155,8 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
   };
 
   const duplicateProject = (project: StoredProject) => {
-    const newProjectId = storageManager.saveProject({
+    storageManager.saveProject({
       name: `${project.name} (Copy)`,
-      description: project.description || '',
       deviceConfig: project.deviceConfig,
       imageDataUrl: project.imageDataUrl,
     });
@@ -185,7 +177,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
     }
   };
 
-  const getFilteredProjects = () => {
+  const filteredProjects = useMemo(() => {
     let filtered = projects.filter(project =>
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.deviceConfig.selectedDevice.toLowerCase().includes(searchTerm.toLowerCase())
@@ -207,9 +199,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
     }
 
     return filtered;
-  };
-
-  const filteredProjects = getFilteredProjects();
+  }, [projects, searchTerm, filterBy]);
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -319,7 +309,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
           <div className="flex items-center gap-2">
             <select
               value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value as any)}
+              onChange={(e) => setFilterBy(e.target.value as 'all' | 'today' | 'week' | 'month')}
               className="h-7 px-2 text-xs border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Time</option>
@@ -329,7 +319,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
             </select>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as 'recent' | 'name' | 'device')}
               className="h-7 px-2 text-xs border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500"
             >
               <option value="recent">Recent</option>
@@ -499,11 +489,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
                           <h6 className={`font-medium text-gray-900 truncate ${viewMode === 'grid' ? 'text-sm' : 'text-xs'}`}>
                             {project.name}
                           </h6>
-                          {viewMode === 'grid' && project.description && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                              {project.description}
-                            </p>
-                          )}
+
                           <div className={`flex items-center gap-3 text-xs text-gray-500 ${
                             viewMode === 'grid' ? 'mt-2' : 'mt-1'
                           }`}>
@@ -610,7 +596,7 @@ export const EnhancedProjectManager: React.FC<EnhancedProjectManagerProps> = ({
                           } else {
                             alert('Failed to import project');
                           }
-                        } catch (error) {
+                        } catch {
                           alert('Invalid project file');
                         }
                       };

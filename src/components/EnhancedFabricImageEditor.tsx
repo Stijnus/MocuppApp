@@ -27,6 +27,8 @@ interface EnhancedFabricImageEditorProps {
   externalImageState?: Partial<ImageState>;
   externalFitMode?: FitMode;
   autoOptimize?: boolean;
+  externalOptimizationConfig?: OptimizedImageConfig;
+  screenCornerRadius?: number;
 }
 
 export default function EnhancedFabricImageEditor({
@@ -37,7 +39,9 @@ export default function EnhancedFabricImageEditor({
   onImageStateChange,
   externalImageState,
   externalFitMode,
-  autoOptimize = true
+  autoOptimize = true,
+  externalOptimizationConfig,
+  screenCornerRadius
 }: EnhancedFabricImageEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -49,67 +53,101 @@ export default function EnhancedFabricImageEditor({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysis | null>(null);
   const [optimizedConfig, setOptimizedConfig] = useState<OptimizedImageConfig | null>(null);
+  const prevExternalImageStateRef = useRef<Partial<ImageState> | undefined>();
   
   // Image transformation state
-  const [imageState, setImageState] = useState<ImageState>({
-    x: deviceScreenWidth / 2,
-    y: deviceScreenHeight / 2,
+  const [imageState, setImageState] = useState<ImageState>(() => ({
+    x: (deviceScreenWidth || 300) / 2,
+    y: (deviceScreenHeight || 600) / 2,
     scale: 1,
     rotation: 0,
     baseScale: 1,
     ...externalImageState,
-  });
+  }));
 
-  const canvasWidth = deviceScreenWidth;
-  const canvasHeight = deviceScreenHeight;
+  const canvasWidth = deviceScreenWidth || 300;
+  const canvasHeight = deviceScreenHeight || 600;
 
   // Initialize canvas with high DPI support
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || canvasWidth <= 0 || canvasHeight <= 0) return;
     
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) return;
+    try {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        console.error('Failed to get 2D context from canvas');
+        return;
+      }
 
-    // Get device pixel ratio for high DPI displays
-    const devicePixelRatio = window.devicePixelRatio || 1;
+      // Get device pixel ratio for high DPI displays
+      const devicePixelRatio = window.devicePixelRatio || 1;
     
-    // Set actual canvas size in memory (scaled up for high DPI)
-    canvas.width = canvasWidth * devicePixelRatio;
-    canvas.height = canvasHeight * devicePixelRatio;
+      // Set actual canvas size in memory (scaled up for high DPI)
+      canvas.width = canvasWidth * devicePixelRatio;
+      canvas.height = canvasHeight * devicePixelRatio;
+      
+      // Scale the canvas back down using CSS
+      canvas.style.width = canvasWidth + 'px';
+      canvas.style.height = canvasHeight + 'px';
+      
+      // Scale the drawing context so everything draws at the correct size
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      
+      // Enable high-quality image rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
     
-    // Scale the canvas back down using CSS
-    canvas.style.width = canvasWidth + 'px';
-    canvas.style.height = canvasHeight + 'px';
-    
-    // Scale the drawing context so everything draws at the correct size
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    
-    // Enable high-quality image rendering
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    setCanvasReady(true);
-    console.log('📐 Enhanced High-DPI Canvas initialized:', { 
-      canvasWidth, 
-      canvasHeight, 
-      devicePixelRatio,
-      actualWidth: canvas.width,
-      actualHeight: canvas.height
-    });
+      setCanvasReady(true);
+      console.log('📐 Enhanced High-DPI Canvas initialized:', { 
+        canvasWidth, 
+        canvasHeight, 
+        devicePixelRatio,
+        actualWidth: canvas.width,
+        actualHeight: canvas.height
+      });
+    } catch (error) {
+      console.error('Failed to initialize canvas:', error);
+      setLoadError('Failed to initialize canvas');
+    }
   }, [canvasWidth, canvasHeight]);
+
+  // Define analyzeImageAsync before any effects that use it
+  const analyzeImageAsync = useCallback(async () => {
+    if (!uploadedImage) return;
+    
+    try {
+      const analysis = await analyzeImage(uploadedImage);
+      setImageAnalysis(analysis);
+      console.log('🔍 Image analysis complete:', analysis);
+    } catch (error) {
+      console.error('Failed to analyze image:', error);
+    }
+  }, [uploadedImage]);
 
   // Analyze image when uploaded
   useEffect(() => {
     if (uploadedImage && autoOptimize) {
       analyzeImageAsync();
     }
-  }, [uploadedImage, autoOptimize]);
+  }, [uploadedImage, autoOptimize, analyzeImageAsync]);
 
-  // Calculate optimization when analysis is complete
+  // Handle external optimization config
   useEffect(() => {
-    if (imageAnalysis && autoOptimize) {
+    if (externalOptimizationConfig) {
+      setOptimizedConfig(externalOptimizationConfig);
+      console.log('🎯 External optimization config applied:', {
+        strategy: externalOptimizationConfig.strategy,
+        scale: externalOptimizationConfig.scale,
+        reasoning: externalOptimizationConfig.reasoning
+      });
+    }
+  }, [externalOptimizationConfig]);
+
+  // Calculate optimization when analysis is complete (only if no external config)
+  useEffect(() => {
+    if (imageAnalysis && autoOptimize && !externalOptimizationConfig) {
       const deviceFrame = generateDeviceFrameSpecs(device);
       const config = calculateOptimalImageConfig(imageAnalysis, deviceFrame, fitMode);
       setOptimizedConfig(config);
@@ -133,19 +171,7 @@ export default function EnhancedFabricImageEditor({
         });
       }
     }
-  }, [imageAnalysis, device, fitMode, autoOptimize]);
-
-  const analyzeImageAsync = async () => {
-    if (!uploadedImage) return;
-    
-    try {
-      const analysis = await analyzeImage(uploadedImage);
-      setImageAnalysis(analysis);
-      console.log('🔍 Image analysis complete:', analysis);
-    } catch (error) {
-      console.error('Failed to analyze image:', error);
-    }
-  };
+  }, [imageAnalysis, device, fitMode, autoOptimize, externalOptimizationConfig, imageState.baseScale, onImageStateChange]);
 
   // Enhanced image drawing with optimization support
   const drawImage = useCallback(() => {
@@ -164,14 +190,54 @@ export default function EnhancedFabricImageEditor({
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
+    // Apply clipping path for rounded rectangle if corner radius is provided
+    if (screenCornerRadius && screenCornerRadius > 0) {
+      ctx.save();
+      ctx.beginPath();
+      
+      // Use roundRect if available, otherwise fallback to regular rect
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(0, 0, canvasWidth, canvasHeight, screenCornerRadius);
+      } else {
+        // Fallback for older browsers - create rounded rectangle manually
+        const radius = Math.min(screenCornerRadius, canvasWidth / 2, canvasHeight / 2);
+        ctx.moveTo(radius, 0);
+        ctx.lineTo(canvasWidth - radius, 0);
+        ctx.quadraticCurveTo(canvasWidth, 0, canvasWidth, radius);
+        ctx.lineTo(canvasWidth, canvasHeight - radius);
+        ctx.quadraticCurveTo(canvasWidth, canvasHeight, canvasWidth - radius, canvasHeight);
+        ctx.lineTo(radius, canvasHeight);
+        ctx.quadraticCurveTo(0, canvasHeight, 0, canvasHeight - radius);
+        ctx.lineTo(0, radius);
+        ctx.quadraticCurveTo(0, 0, radius, 0);
+      }
+      
+      ctx.clip();
+    }
+    
     // Apply quality enhancements if optimization is available
     if (optimizedConfig) {
-      // Apply quality adjustments
+      // Apply quality adjustments with proper CSS filter values
+      const brightness = optimizedConfig.quality.brightness || 1;
+      const contrast = optimizedConfig.quality.contrast || 1;
+      const saturation = optimizedConfig.quality.saturation || 1;
+      const sharpening = optimizedConfig.quality.sharpening || 0;
+      
+      // Build filter string with proper values
       ctx.filter = `
-        brightness(${1 + (optimizedConfig.quality.sharpening * 0.1)})
-        saturate(${optimizedConfig.quality.saturation})
-        contrast(${1 + (optimizedConfig.quality.compression * 0.1)})
-      `;
+        brightness(${brightness})
+        contrast(${contrast})
+        saturate(${saturation})
+        ${sharpening > 0 ? `blur(${-sharpening * 0.1}px)` : ''}
+      `.replace(/\s+/g, ' ').trim();
+      
+      console.log('🎨 Applied quality filters:', {
+        brightness,
+        contrast,
+        saturation,
+        sharpening,
+        filter: ctx.filter
+      });
     }
     
     // Save context state
@@ -211,7 +277,12 @@ export default function EnhancedFabricImageEditor({
     
     // Reset filter
     ctx.filter = 'none';
-  }, [imageState, canvasWidth, canvasHeight, optimizedConfig]);
+    
+    // Restore clipping context if applied
+    if (screenCornerRadius && screenCornerRadius > 0) {
+      ctx.restore();
+    }
+  }, [imageState.x, imageState.y, imageState.scale, imageState.rotation, imageState.baseScale, canvasWidth, canvasHeight, optimizedConfig, screenCornerRadius]);
 
   // Load and setup image with enhanced processing
   useEffect(() => {
@@ -256,7 +327,10 @@ export default function EnhancedFabricImageEditor({
       }
       
       setImageState(newState);
-      onImageStateChange?.(newState);
+      // Notify parent of the initial state
+      setTimeout(() => {
+        onImageStateChange?.(newState);
+      }, 0);
       
       setIsLoading(false);
       console.log('🖼️ Enhanced image loaded:', {
@@ -275,28 +349,31 @@ export default function EnhancedFabricImageEditor({
     };
     
     img.src = uploadedImage;
-  }, [uploadedImage, canvasReady, optimizedConfig, fitMode, canvasWidth, canvasHeight]);
+  }, [uploadedImage, canvasReady, canvasWidth, canvasHeight, externalImageState, fitMode, onImageStateChange, optimizedConfig]);
 
   // Redraw image when state changes
   useEffect(() => {
     if (imageRef.current) {
       drawImage();
     }
-  }, [imageState, drawImage]);
+  }, [drawImage]);
 
-  // Handle external image state changes
+  // Handle external image state changes with deep comparison and ref stability
   useEffect(() => {
-    if (externalImageState) {
+    if (!externalImageState) return;
+    
+    const prevStateJson = prevExternalImageStateRef.current ? JSON.stringify(prevExternalImageStateRef.current) : '';
+    const currentStateJson = JSON.stringify(externalImageState);
+    
+    // Only update if the JSON representation actually changed
+    if (prevStateJson !== currentStateJson) {
+      prevExternalImageStateRef.current = externalImageState;
       setImageState(prev => ({
         ...prev,
         ...externalImageState,
       }));
-      onImageStateChange?.({
-        ...imageState,
-        ...externalImageState,
-      });
     }
-  }, [externalImageState, onImageStateChange]);
+  }, [externalImageState]);
 
   // Handle external fit mode changes
   useEffect(() => {
@@ -387,6 +464,19 @@ export default function EnhancedFabricImageEditor({
     );
   }
 
+  // Validation check after all hooks
+  if (!device || typeof deviceScreenWidth !== 'number' || typeof deviceScreenHeight !== 'number') {
+    console.error('EnhancedFabricImageEditor: Missing required props', { device, deviceScreenWidth, deviceScreenHeight });
+    return (
+      <div className="w-full h-full flex items-center justify-center text-red-500 bg-red-50">
+        <div className="text-center">
+          <div className="text-2xl mb-2">⚠️</div>
+          <p className="text-sm">Component initialization error</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full relative">
       {isLoading && (
@@ -412,10 +502,11 @@ export default function EnhancedFabricImageEditor({
         ref={canvasRef}
         className="w-full h-full object-cover"
         style={{ 
-          borderRadius: 'inherit',
+          borderRadius: screenCornerRadius ? `${screenCornerRadius}px` : 'inherit',
           backgroundColor: 'transparent',
           cursor: isDragging ? 'grabbing' : 'grab',
-          imageRendering: 'high-quality',
+          imageRendering: 'auto',
+          overflow: 'hidden',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
