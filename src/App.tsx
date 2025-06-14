@@ -1,20 +1,17 @@
 import { useReducer, useRef, useMemo, useEffect } from 'react';
 import { DeviceRenderer } from './components/DeviceRenderer';
 import { DEVICE_SPECS } from './data/DeviceSpecs';
-import { Sidebar } from './components/Sidebar';
+import { EnhancedSidebar } from './components/EnhancedSidebar';
 import { TopNavbar } from './components/TopNavbar';
 import { ImageState, FitMode } from './components/FabricImageEditor';
-// import { ZOOM_CONSTANTS } from './lib/zoomUtils'; // Zoom constants no longer needed
 import { ViewAngle, PerspectiveView } from './types/DeviceTypes';
 import { storageManager } from './lib/storage';
 
 type State = {
   selectedDevice: string;
   uploadedImage?: string;
-  // zoom: number; // Zoom state removed
   positionX: number;
   positionY: number;
-  // hasManualZoom: boolean; // Zoom state removed
   viewAngle: ViewAngle;
   perspective: PerspectiveView;
   orientation: 'portrait' | 'landscape';
@@ -25,11 +22,9 @@ type State = {
 export type Action =
   | { type: 'SET_DEVICE'; payload: string }
   | { type: 'SET_UPLOADED_IMAGE'; payload: string }
-  // | { type: 'SET_ZOOM'; payload: number; manual?: boolean } // Zoom action removed
   | { type: 'SET_POSITION'; payload: { x: number; y: number } }
   | { type: 'SET_VIEW_ANGLE'; payload: ViewAngle }
   | { type: 'SET_PERSPECTIVE'; payload: PerspectiveView }
-  // | { type: 'RESET_ZOOM' } // Zoom action removed
   | { type: 'RESET_VIEW' }
   | { type: 'SET_ORIENTATION'; payload: 'portrait' | 'landscape' }
   | { type: 'LOAD_SAVED_STATE'; payload: Partial<State> }
@@ -40,10 +35,8 @@ export type Action =
 const initialState: State = {
   selectedDevice: 'iphone-16-pro-max',
   uploadedImage: undefined,
-  // zoom: ZOOM_CONSTANTS.DEFAULT_ZOOM, // Zoom state removed
   positionX: 0,
   positionY: 0,
-  // hasManualZoom: false, // Zoom state removed
   viewAngle: 'front',
   perspective: 'flat',
   orientation: 'portrait',
@@ -60,7 +53,6 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         selectedDevice: action.payload,
-        // zoom: state.hasManualZoom ? state.zoom : ZOOM_CONSTANTS.DEFAULT_ZOOM, // Zoom logic removed
         positionX: 0,
         positionY: 0,
       };
@@ -69,18 +61,9 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         uploadedImage: action.payload,
-        // zoom: ZOOM_CONSTANTS.DEFAULT_ZOOM, // Zoom logic removed
         positionX: 0,
         positionY: 0,
-        // hasManualZoom: false, // Zoom logic removed
       };
-
-    // case 'SET_ZOOM': // Zoom action removed
-    //   return {
-    //     ...state,
-    //     zoom: action.payload,
-    //     hasManualZoom: action.manual !== false,
-    //   };
     case 'SET_POSITION':
       return {
         ...state,
@@ -97,23 +80,13 @@ function reducer(state: State, action: Action): State {
         ...state,
         perspective: action.payload,
       };
-    // case 'RESET_ZOOM': // Zoom action removed
-    //   return {
-    //     ...state,
-    //     zoom: ZOOM_CONSTANTS.DEFAULT_ZOOM,
-    //     positionX: 0,
-    //     positionY: 0,
-    //     hasManualZoom: false,
-    //   };
     case 'RESET_VIEW':
       return {
         ...state,
         viewAngle: 'front',
         perspective: 'flat',
-        // zoom: ZOOM_CONSTANTS.DEFAULT_ZOOM, // Zoom logic removed
         positionX: 0,
         positionY: 0,
-        // hasManualZoom: false, // Zoom logic removed
       };
     case 'SET_ORIENTATION':
       return {
@@ -197,8 +170,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <Sidebar 
+      {/* Enhanced Sidebar */}
+      <EnhancedSidebar 
         dispatch={dispatch}
         captureRef={mockupRef}
         viewAngle={state.viewAngle}
