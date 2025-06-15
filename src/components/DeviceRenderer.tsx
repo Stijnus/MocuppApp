@@ -2,7 +2,6 @@ import React from 'react';
 import { DeviceSpecs, ViewAngle, PerspectiveView } from '../types/DeviceTypes';
 import EnhancedFabricImageEditor, { ImageState, FitMode } from './EnhancedFabricImageEditor';
 import { getViewConfig, getTransformStyle, getShadowStyle } from '../lib/viewUtils';
-import { Action } from '../App';
 import { OptimizedImageConfig } from '../lib/imageOptimization';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -11,7 +10,7 @@ interface DeviceRendererProps {
   uploadedImage?: string;
   viewAngle: ViewAngle;
   perspective: PerspectiveView;
-  dispatch: React.Dispatch<Action>;
+  onImageStateChange: (state: ImageState) => void;
   imageState?: ImageState;
   fitMode?: FitMode;
   optimizationConfig?: OptimizedImageConfig;
@@ -19,10 +18,10 @@ interface DeviceRendererProps {
 
 // Z-index constants for better maintainability
 const Z_INDEX = {
-  DEVICE_FRAME: 1,      // Device frame layer (background)
-  SCREEN_CONTENT: 2,    // Screen content container (above frame)
-  DEVICE_ELEMENTS: 3,   // Dynamic island, buttons, etc. (above screen)
-  FILE_UPLOAD: 4,       // Interactive upload area (when no image)
+  DEVICE_FRAME: 1,
+  SCREEN_CONTENT: 2,
+  DEVICE_ELEMENTS: 3,
+  FILE_UPLOAD: 4,
 } as const;
 
 export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
@@ -30,15 +29,11 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
   uploadedImage,
   viewAngle,
   perspective,
-  dispatch,
+  onImageStateChange,
   imageState,
   fitMode,
   optimizationConfig
 }) => {
-  const handleImageStateChange = (newImageState: ImageState) => {
-    dispatch({ type: 'SET_IMAGE_STATE', payload: newImageState });
-  };
-
   // Get the current view configuration
   const viewConfig = getViewConfig(viewAngle, perspective);
   const transformStyle = getTransformStyle(viewConfig);
@@ -175,7 +170,7 @@ export const DeviceRenderer: React.FC<DeviceRendererProps> = React.memo(({
                       deviceScreenWidth={screenWidth}
                       deviceScreenHeight={screenHeight}
                       device={device}
-                      onImageStateChange={handleImageStateChange}
+                      onImageStateChange={onImageStateChange}
                       externalImageState={imageState}
                       externalFitMode={fitMode}
                       autoOptimize={false}
