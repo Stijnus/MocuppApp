@@ -12,7 +12,13 @@ import {
   RefreshCw,
   Settings2,
   Zap,
-  Camera
+  Camera,
+  Sparkles,
+  Palette,
+  Play,
+  Pause,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface EnhancedViewSettingsProps {
@@ -24,36 +30,45 @@ interface EnhancedViewSettingsProps {
 }
 
 const ANGLE_PRESETS = [
-  { value: 'front' as ViewAngle, label: 'Front', icon: <Monitor className="w-4 h-4" />, preview: '0°' },
-  { value: 'angle-15' as ViewAngle, label: '15° Right', icon: <RotateCw className="w-4 h-4" />, preview: '15°' },
-  { value: 'angle-30' as ViewAngle, label: '30° Right', icon: <RotateCw className="w-4 h-4" />, preview: '30°' },
-  { value: 'angle-45' as ViewAngle, label: '45° Right', icon: <RotateCw className="w-4 h-4" />, preview: '45°' },
-  { value: 'angle--15' as ViewAngle, label: '15° Left', icon: <RotateCcw className="w-4 h-4" />, preview: '-15°' },
-  { value: 'angle--30' as ViewAngle, label: '30° Left', icon: <RotateCcw className="w-4 h-4" />, preview: '-30°' },
-  { value: 'angle--45' as ViewAngle, label: '45° Left', icon: <RotateCcw className="w-4 h-4" />, preview: '-45°' },
+  { value: 'front' as ViewAngle, label: 'Front View', icon: <Monitor className="w-5 h-5" />, preview: '0°', gradient: 'from-gray-500 to-slate-500' },
+  { value: 'angle-15' as ViewAngle, label: '15° Right', icon: <RotateCw className="w-5 h-5" />, preview: '15°', gradient: 'from-blue-500 to-cyan-500' },
+  { value: 'angle-30' as ViewAngle, label: '30° Right', icon: <RotateCw className="w-5 h-5" />, preview: '30°', gradient: 'from-emerald-500 to-teal-500' },
+  { value: 'angle-45' as ViewAngle, label: '45° Right', icon: <RotateCw className="w-5 h-5" />, preview: '45°', gradient: 'from-purple-500 to-pink-500' },
+  { value: 'angle--15' as ViewAngle, label: '15° Left', icon: <RotateCcw className="w-5 h-5" />, preview: '-15°', gradient: 'from-orange-500 to-amber-500' },
+  { value: 'angle--30' as ViewAngle, label: '30° Left', icon: <RotateCcw className="w-5 h-5" />, preview: '-30°', gradient: 'from-red-500 to-rose-500' },
+  { value: 'angle--45' as ViewAngle, label: '45° Left', icon: <RotateCcw className="w-5 h-5" />, preview: '-45°', gradient: 'from-indigo-500 to-violet-500' },
 ];
 
 const PERSPECTIVE_OPTIONS = [
   { 
     value: 'flat' as PerspectiveView, 
-    label: 'Flat', 
-    icon: <Monitor className="w-4 h-4" />, 
-    description: 'Clean 2D view',
-    color: 'blue'
+    label: 'Flat View', 
+    icon: <Monitor className="w-5 h-5" />, 
+    description: 'Clean 2D presentation',
+    gradient: 'from-blue-500 to-cyan-500',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-700',
+    borderColor: 'border-blue-200'
   },
   { 
     value: 'perspective' as PerspectiveView, 
     label: 'Perspective', 
-    icon: <Layers3 className="w-4 h-4" />, 
+    icon: <Layers3 className="w-5 h-5" />, 
     description: 'Realistic 3D depth',
-    color: 'purple'
+    gradient: 'from-purple-500 to-pink-500',
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-700',
+    borderColor: 'border-purple-200'
   },
   { 
     value: 'isometric' as PerspectiveView, 
     label: 'Isometric', 
-    icon: <Box className="w-4 h-4" />, 
+    icon: <Box className="w-5 h-5" />, 
     description: 'Technical 3D view',
-    color: 'green'
+    gradient: 'from-emerald-500 to-teal-500',
+    bgColor: 'bg-emerald-50',
+    textColor: 'text-emerald-700',
+    borderColor: 'border-emerald-200'
   },
 ];
 
@@ -62,22 +77,31 @@ const QUICK_PRESETS = [
     name: 'Marketing Shot', 
     angle: 'angle-30' as ViewAngle, 
     perspective: 'perspective' as PerspectiveView,
-    icon: <Zap className="w-4 h-4" />,
-    description: 'Perfect for presentations'
+    icon: <Zap className="w-5 h-5" />,
+    description: 'Perfect for presentations',
+    gradient: 'from-yellow-400 to-orange-500',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200'
   },
   { 
     name: 'Clean Profile', 
     angle: 'front' as ViewAngle, 
     perspective: 'flat' as PerspectiveView,
-    icon: <Eye className="w-4 h-4" />,
-    description: 'Minimal and clean'
+    icon: <Eye className="w-5 h-5" />,
+    description: 'Minimal and professional',
+    gradient: 'from-blue-400 to-indigo-500',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200'
   },
   { 
     name: 'Dynamic View', 
     angle: 'angle-45' as ViewAngle, 
     perspective: 'isometric' as PerspectiveView,
-    icon: <RotateCw className="w-4 h-4" />,
-    description: 'Engaging 3D angle'
+    icon: <Sparkles className="w-5 h-5" />,
+    description: 'Engaging 3D showcase',
+    gradient: 'from-purple-400 to-pink-500',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200'
   }
 ];
 
@@ -90,7 +114,7 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [customAngle, setCustomAngle] = useState(0);
-  const [previewMode, setPreviewMode] = useState<'grid' | 'carousel'>('grid');
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleQuickPreset = (preset: typeof QUICK_PRESETS[0]) => {
     onAngleChange(preset.angle);
@@ -100,358 +124,345 @@ export const EnhancedViewSettings: React.FC<EnhancedViewSettingsProps> = ({
   const currentAnglePreset = ANGLE_PRESETS.find(p => p.value === currentAngle);
   const currentPerspectiveOption = PERSPECTIVE_OPTIONS.find(p => p.value === currentPerspective);
 
-  // Generate preview combinations for the grid
-  const generatePreviewCombinations = () => {
-    const popularAngles: ViewAngle[] = ['front', 'angle-30', 'angle-45', 'angle--30'];
+  const runAnimation = async (type: 'rotate' | 'perspective') => {
+    setIsAnimating(true);
     
-    return popularAngles.map(angle => ({
-      angle,
-      perspective: currentPerspective,
-      isSelected: angle === currentAngle
-    }));
+    if (type === 'rotate') {
+      const angles: ViewAngle[] = ['front', 'angle-15', 'angle-30', 'angle-45', 'angle-30', 'angle-15', 'front'];
+      for (let i = 0; i < angles.length; i++) {
+        onAngleChange(angles[i]);
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }
+    } else {
+      const perspectives: PerspectiveView[] = ['flat', 'perspective', 'isometric', 'perspective', 'flat'];
+      for (let i = 0; i < perspectives.length; i++) {
+        onPerspectiveChange(perspectives[i]);
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+    }
+    
+    setIsAnimating(false);
   };
-
-  const previewCombinations = generatePreviewCombinations();
 
   return (
     <div className="space-y-6">
       {/* Quick Presets */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-gray-900">Quick Presets</h4>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <h4 className="text-lg font-bold text-gray-900">Quick Presets</h4>
+          </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={onReset}
-            className="h-7 px-2 text-xs"
+            className="h-9 px-3 rounded-xl hover:shadow-md transition-all duration-300"
           >
-            <RefreshCw className="w-3 h-3 mr-1" />
+            <RefreshCw className="w-4 h-4 mr-2" />
             Reset
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 gap-2">
-          {QUICK_PRESETS.map((preset) => (
-            <button
-              key={preset.name}
-              onClick={() => handleQuickPreset(preset)}
-              className={`p-3 rounded-lg border transition-all duration-200 text-left group hover:shadow-sm ${
-                currentAngle === preset.angle && currentPerspective === preset.perspective
-                  ? 'border-blue-200 bg-blue-50 shadow-sm'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                  currentAngle === preset.angle && currentPerspective === preset.perspective
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                }`}>
-                  {preset.icon}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm text-gray-900">{preset.name}</p>
-                  <p className="text-xs text-gray-500">{preset.description}</p>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Angle Preview Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-gray-900">Angle Preview</h4>
-          <div className="flex gap-1">
-            <Button
-              variant={previewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setPreviewMode('grid')}
-              className="h-7 w-7 p-0"
-            >
-              <Box className="w-3 h-3" />
-            </Button>
-            <Button
-              variant={previewMode === 'carousel' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setPreviewMode('carousel')}
-              className="h-7 w-7 p-0"
-            >
-              <Camera className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-
-        {previewMode === 'grid' ? (
-          <div className="grid grid-cols-2 gap-3">
-            {previewCombinations.map((combo) => {
-              const preset = ANGLE_PRESETS.find(p => p.value === combo.angle);
-              return (
-                <button
-                  key={combo.angle}
-                  onClick={() => onAngleChange(combo.angle)}
-                  className={`relative p-4 rounded-lg border transition-all duration-200 hover:shadow-sm ${
-                    combo.isSelected
-                      ? 'border-blue-200 bg-blue-50 ring-2 ring-blue-200/50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {/* Mini Device Preview */}
-                  <div className="flex items-center justify-center mb-3">
-                    <div 
-                      className={`w-12 h-20 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg transform transition-all duration-300 ${
-                        currentPerspective === 'perspective' ? 'perspective-1000' : ''
-                      } ${
-                        currentPerspective === 'isometric' ? 'skew-y-1' : ''
-                      }`} 
-                      style={{
-                        transform: combo.angle === 'front' ? 'rotateY(0deg)' :
-                                  combo.angle === 'angle-15' ? 'rotateY(15deg)' :
-                                  combo.angle === 'angle-30' ? 'rotateY(30deg)' :
-                                  combo.angle === 'angle-45' ? 'rotateY(45deg)' :
-                                  combo.angle === 'angle--15' ? 'rotateY(-15deg)' :
-                                  combo.angle === 'angle--30' ? 'rotateY(-30deg)' :
-                                  combo.angle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
-                      }}
-                    >
-                      <div className="w-full h-full bg-blue-500/20 rounded-sm m-1"></div>
+        <div className="space-y-3">
+          {QUICK_PRESETS.map((preset) => {
+            const isActive = currentAngle === preset.angle && currentPerspective === preset.perspective;
+            return (
+              <button
+                key={preset.name}
+                onClick={() => handleQuickPreset(preset)}
+                className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 text-left group hover:scale-[1.02] ${
+                  isActive
+                    ? `${preset.bgColor} ${preset.borderColor} shadow-lg`
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl shadow-lg ${
+                    isActive 
+                      ? `bg-gradient-to-r ${preset.gradient}` 
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <div className={isActive ? 'text-white' : 'text-gray-600'}>
+                      {preset.icon}
                     </div>
                   </div>
-                  
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-900">
-                      {preset?.preview || combo.angle}
+                  <div className="flex-1">
+                    <h5 className={`font-bold transition-colors ${
+                      isActive ? 'text-gray-900' : 'text-gray-800 group-hover:text-gray-900'
+                    }`}>
+                      {preset.name}
+                    </h5>
+                    <p className={`text-sm transition-colors ${
+                      isActive ? 'text-gray-600' : 'text-gray-500'
+                    }`}>
+                      {preset.description}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {preset?.label || 'Custom'}
-                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-lg">
+                        {ANGLE_PRESETS.find(a => a.value === preset.angle)?.preview}
+                      </span>
+                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-lg">
+                        {preset.perspective}
+                      </span>
+                    </div>
                   </div>
-
-                  {combo.isSelected && (
-                    <div className="absolute top-2 right-2 w-3 h-3 bg-blue-500 rounded-full"></div>
+                  {isActive && (
+                    <div className="p-2 bg-white/80 rounded-xl">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                    </div>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Carousel Mode - Interactive Slider */}
-            <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-              <div className="flex items-center justify-center mb-4">
-                <div className={`w-20 h-32 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-lg transform transition-all duration-500 ${
-                  currentPerspective === 'perspective' ? 'perspective-1000' : ''
-                } ${
-                  currentPerspective === 'isometric' ? 'skew-y-2' : ''
-                }`} style={{
-                  transform: currentAngle === 'front' ? 'rotateY(0deg)' :
-                            currentAngle === 'angle-15' ? 'rotateY(15deg)' :
-                            currentAngle === 'angle-30' ? 'rotateY(30deg)' :
-                            currentAngle === 'angle-45' ? 'rotateY(45deg)' :
-                            currentAngle === 'angle--15' ? 'rotateY(-15deg)' :
-                            currentAngle === 'angle--30' ? 'rotateY(-30deg)' :
-                            currentAngle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
-                }}>
-                  <div className="w-full h-full bg-blue-500/30 rounded-sm m-1"></div>
                 </div>
-              </div>
-              
-              <div className="text-center mb-4">
-                <p className="text-sm font-medium text-gray-900">
-                  {currentAnglePreset?.label || 'Custom'} • {currentPerspectiveOption?.label}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {currentAnglePreset?.preview || currentAngle}
-                </p>
-              </div>
-
-              {/* Quick Angle Buttons */}
-              <div className="flex justify-center gap-2">
-                {ANGLE_PRESETS.slice(0, 7).map((preset) => (
-                  <Button
-                    key={preset.value}
-                    variant={currentAngle === preset.value ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onAngleChange(preset.value)}
-                    className="h-8 w-8 p-0"
-                    title={preset.label}
-                  >
-                    {preset.icon}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Current Settings Display */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-900">Current Settings</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <RotateCw className="w-3 h-3 text-gray-600" />
-              <span className="text-xs font-medium text-gray-600">Angle</span>
+      {/* Live Preview */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
+            <Camera className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-lg font-bold text-gray-900">Live Preview</h4>
+        </div>
+        
+        <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
+          <div className="flex items-center justify-center mb-6">
+            <div 
+              className={`w-24 h-40 bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl shadow-2xl transform transition-all duration-700 ${
+                currentPerspective === 'perspective' ? 'perspective-1000' : ''
+              } ${
+                currentPerspective === 'isometric' ? 'skew-y-2' : ''
+              }`} 
+              style={{
+                transform: currentAngle === 'front' ? 'rotateY(0deg)' :
+                          currentAngle === 'angle-15' ? 'rotateY(15deg)' :
+                          currentAngle === 'angle-30' ? 'rotateY(30deg)' :
+                          currentAngle === 'angle-45' ? 'rotateY(45deg)' :
+                          currentAngle === 'angle--15' ? 'rotateY(-15deg)' :
+                          currentAngle === 'angle--30' ? 'rotateY(-30deg)' :
+                          currentAngle === 'angle--45' ? 'rotateY(-45deg)' : 'rotateY(0deg)'
+              }}
+            >
+              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg m-2"></div>
             </div>
-            <p className="text-sm font-medium text-gray-900">
-              {currentAnglePreset?.preview || currentAngle}
+          </div>
+          
+          <div className="text-center space-y-2">
+            <h5 className="text-lg font-bold text-gray-900">
+              {currentAnglePreset?.label || 'Custom'} • {currentPerspectiveOption?.label}
+            </h5>
+            <p className="text-sm text-gray-600">
+              {currentAnglePreset?.preview || currentAngle} rotation
             </p>
           </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <Layers3 className="w-3 h-3 text-gray-600" />
-              <span className="text-xs font-medium text-gray-600">Style</span>
-            </div>
-            <p className="text-sm font-medium text-gray-900">
-              {currentPerspectiveOption?.label || currentPerspective}
-            </p>
+
+          {/* Animation Controls */}
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => runAnimation('rotate')}
+              disabled={isAnimating}
+              className="flex-1 h-10 rounded-xl hover:shadow-md transition-all duration-300"
+            >
+              {isAnimating ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+              Rotation Demo
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => runAnimation('perspective')}
+              disabled={isAnimating}
+              className="flex-1 h-10 rounded-xl hover:shadow-md transition-all duration-300"
+            >
+              <Palette className="w-4 h-4 mr-2" />
+              Style Demo
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Advanced Controls Toggle */}
-      <div className="border-t border-gray-200 pt-4">
+      {/* Angle Selection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl">
+            <RotateCw className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-lg font-bold text-gray-900">Rotation Angles</h4>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {ANGLE_PRESETS.map((preset) => {
+            const isSelected = currentAngle === preset.value;
+            return (
+              <button
+                key={preset.value}
+                onClick={() => onAngleChange(preset.value)}
+                className={`p-4 rounded-2xl border-2 transition-all duration-300 group hover:scale-[1.02] ${
+                  isSelected
+                    ? 'border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg'
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl transition-all duration-300 ${
+                    isSelected 
+                      ? `bg-gradient-to-r ${preset.gradient} shadow-lg` 
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <div className={isSelected ? 'text-white' : 'text-gray-600'}>
+                      {preset.icon}
+                    </div>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className={`font-bold text-sm transition-colors ${
+                      isSelected ? 'text-blue-900' : 'text-gray-900'
+                    }`}>
+                      {preset.preview}
+                    </p>
+                    <p className={`text-xs transition-colors ${
+                      isSelected ? 'text-blue-600' : 'text-gray-500'
+                    }`}>
+                      {preset.label}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Perspective Selection */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl">
+            <Layers3 className="w-4 h-4 text-white" />
+          </div>
+          <h4 className="text-lg font-bold text-gray-900">Perspective Styles</h4>
+        </div>
+
+        <div className="space-y-3">
+          {PERSPECTIVE_OPTIONS.map((option) => {
+            const isSelected = currentPerspective === option.value;
+            return (
+              <button
+                key={option.value}
+                onClick={() => onPerspectiveChange(option.value)}
+                className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 text-left group hover:scale-[1.02] ${
+                  isSelected
+                    ? `${option.bgColor} ${option.borderColor} shadow-lg`
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-xl shadow-lg ${
+                    isSelected 
+                      ? `bg-gradient-to-r ${option.gradient}` 
+                      : 'bg-gray-100 group-hover:bg-gray-200'
+                  }`}>
+                    <div className={isSelected ? 'text-white' : 'text-gray-600'}>
+                      {option.icon}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h5 className={`font-bold transition-colors ${
+                      isSelected ? option.textColor : 'text-gray-900'
+                    }`}>
+                      {option.label}
+                    </h5>
+                    <p className={`text-sm transition-colors ${
+                      isSelected ? 'text-gray-600' : 'text-gray-500'
+                    }`}>
+                      {option.description}
+                    </p>
+                  </div>
+                  {isSelected && (
+                    <div className="p-2 bg-white/80 rounded-xl">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Advanced Controls */}
+      <div className="border-t border-gray-200 pt-6">
         <Button
           variant="ghost"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full justify-between h-8 px-3"
+          className="w-full justify-between h-12 px-4 rounded-xl hover:shadow-md transition-all duration-300"
         >
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4" />
-            <span className="text-sm">Advanced Controls</span>
+          <div className="flex items-center gap-3">
+            <Settings2 className="w-5 h-5" />
+            <span className="font-medium">Advanced Controls</span>
           </div>
-          <RotateCw className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+          {showAdvanced ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </Button>
 
         {showAdvanced && (
-          <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
-            {/* Angle Selection */}
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-gray-900">Rotation Angle</h5>
-              <div className="grid grid-cols-2 gap-2">
-                {ANGLE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.value}
-                    onClick={() => onAngleChange(preset.value)}
-                    className={`p-2 rounded-lg border text-left transition-all duration-150 ${
-                      currentAngle === preset.value
-                        ? 'border-blue-200 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {preset.icon}
-                      <div>
-                        <p className="text-xs font-medium">{preset.preview}</p>
-                        <p className="text-xs text-gray-500">{preset.label}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Perspective Selection */}
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-gray-900">Perspective Style</h5>
-              <div className="space-y-2">
-                {PERSPECTIVE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => onPerspectiveChange(option.value)}
-                    className={`w-full p-3 rounded-lg border text-left transition-all duration-150 ${
-                      currentPerspective === option.value
-                        ? 'border-blue-200 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        currentPerspective === option.value
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {option.icon}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-900">{option.label}</p>
-                        <p className="text-xs text-gray-500">{option.description}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
             {/* Custom Angle Slider */}
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-gray-900">Custom Rotation</h5>
-              <div className="space-y-2">
-                <Slider
-                  value={[customAngle]}
-                  onValueChange={(value) => setCustomAngle(value[0])}
-                  max={90}
-                  min={-90}
-                  step={5}
-                  className="w-full"
-                />
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>-90°</span>
-                  <span className="font-medium">{customAngle}°</span>
-                  <span>90°</span>
+            <div className="space-y-4">
+              <h5 className="text-md font-bold text-gray-900">Custom Rotation</h5>
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
+                <div className="space-y-4">
+                  <Slider
+                    value={[customAngle]}
+                    onValueChange={(value) => setCustomAngle(value[0])}
+                    max={90}
+                    min={-90}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>-90°</span>
+                    <span className="font-bold text-lg text-gray-900">{customAngle}°</span>
+                    <span>90°</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const customViewAngle = `angle-${customAngle}` as ViewAngle;
+                      onAngleChange(customViewAngle);
+                    }}
+                    className="w-full h-10 rounded-xl hover:shadow-md transition-all duration-300"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Apply Custom Angle
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const customViewAngle = `angle-${customAngle}` as ViewAngle;
-                    onAngleChange(customViewAngle);
-                  }}
-                  className="w-full h-7 text-xs"
-                >
-                  Apply Custom Angle
-                </Button>
               </div>
             </div>
 
-            {/* Animation Presets */}
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-gray-900">Animation Presets</h5>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const angles: ViewAngle[] = ['angle--45', 'front', 'angle-45', 'front'];
-                    let index = 0;
-                    const interval = setInterval(() => {
-                      onAngleChange(angles[index]);
-                      index++;
-                      if (index >= angles.length) clearInterval(interval);
-                    }, 500);
-                  }}
-                  className="h-8 text-xs"
-                >
-                  🔄 Rotate Demo
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const perspectives: PerspectiveView[] = ['flat', 'perspective', 'isometric', 'flat'];
-                    let index = 0;
-                    const interval = setInterval(() => {
-                      onPerspectiveChange(perspectives[index]);
-                      index++;
-                      if (index >= perspectives.length) clearInterval(interval);
-                    }, 600);
-                  }}
-                  className="h-8 text-xs"
-                >
-                  ✨ Style Demo
-                </Button>
+            {/* Current Settings */}
+            <div className="space-y-4">
+              <h5 className="text-md font-bold text-gray-900">Current Settings</h5>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <RotateCw className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-700">Angle</span>
+                  </div>
+                  <p className="font-bold text-blue-900">
+                    {currentAnglePreset?.preview || currentAngle}
+                  </p>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers3 className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-700">Style</span>
+                  </div>
+                  <p className="font-bold text-purple-900">
+                    {currentPerspectiveOption?.label || currentPerspective}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

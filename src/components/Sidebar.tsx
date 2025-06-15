@@ -6,7 +6,7 @@ import { FileUpload } from './FileUpload';
 import { DownloadModal } from './DownloadModal';
 import { Action } from '../App';
 import { ViewAngle, PerspectiveView } from '../types/DeviceTypes';
-import { ImageState, FitMode } from './FabricImageEditor';
+import { ImageState, FitMode } from './EnhancedFabricImageEditor';
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -17,17 +17,17 @@ import {
   FolderOpen,
   Smartphone,
   Camera,
-  Upload,
-  Layers3,
   CheckCircle2,
   ZoomIn,
   ZoomOut,
   RotateCw,
   Move,
   Maximize2,
-  Square,
   Minimize2,
-  Settings
+  Settings,
+  Sparkles,
+  Image as ImageIcon,
+  Palette
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -99,34 +99,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarSections = [
     {
       id: 'device',
-      icon: <Smartphone className="w-4 h-4" />,
+      icon: <Smartphone className="w-5 h-5" />,
       label: 'Device',
-      description: 'Select device model',
-      color: 'blue',
+      description: 'Select your device model',
+      gradient: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-200',
       hasContent: !!currentState.selectedDevice
     },
     {
       id: 'upload',
-      icon: <Upload className="w-4 h-4" />,
-      label: 'Upload',
-      description: 'Add screenshot',
-      color: 'green',
+      icon: <ImageIcon className="w-5 h-5" />,
+      label: 'Media',
+      description: 'Upload your screenshot',
+      gradient: 'from-emerald-500 to-teal-500',
+      bgColor: 'bg-emerald-50',
+      textColor: 'text-emerald-700',
+      borderColor: 'border-emerald-200',
       hasContent: !!currentState.uploadedImage
     },
     {
       id: 'view',
-      icon: <Layers3 className="w-4 h-4" />,
-      label: 'View',
-      description: 'Adjust perspective',
-      color: 'purple',
+      icon: <Palette className="w-5 h-5" />,
+      label: 'Style',
+      description: 'Customize perspective & view',
+      gradient: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-200',
       hasContent: currentState.viewAngle !== 'front' || currentState.perspective !== 'flat'
     },
     {
       id: 'projects',
-      icon: <FolderOpen className="w-4 h-4" />,
+      icon: <FolderOpen className="w-5 h-5" />,
       label: 'Projects',
-      description: 'Save & manage',
-      color: 'orange',
+      description: 'Save & manage projects',
+      gradient: 'from-orange-500 to-amber-500',
+      bgColor: 'bg-orange-50',
+      textColor: 'text-orange-700',
+      borderColor: 'border-orange-200',
       hasContent: false
     }
   ];
@@ -134,33 +146,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const getTabButtonClasses = (section: typeof sidebarSections[0]) => {
     const isActive = activeSection === section.id;
     
-    const baseClasses = "group relative p-3 rounded-xl text-left transition-all duration-200 hover:shadow-sm";
-    const colorClasses = {
-      blue: isActive ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm' : 'hover:bg-blue-50/50',
-      green: isActive ? 'bg-green-50 text-green-700 border border-green-200 shadow-sm' : 'hover:bg-green-50/50',
-      purple: isActive ? 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm' : 'hover:bg-purple-50/50',
-      orange: isActive ? 'bg-orange-50 text-orange-700 border border-orange-200 shadow-sm' : 'hover:bg-orange-50/50',
-    };
+    if (isActive) {
+      return `relative p-4 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] ${section.bgColor} ${section.textColor} border ${section.borderColor} shadow-lg shadow-${section.textColor.split('-')[1]}-500/20`;
+    }
     
-    return `${baseClasses} ${colorClasses[section.color as keyof typeof colorClasses] || colorClasses.blue} ${
-      !isActive ? 'hover:bg-gray-50/80 text-gray-700' : ''
-    }`;
+    return "relative p-4 rounded-2xl text-gray-600 transition-all duration-300 hover:bg-gray-50 hover:text-gray-800 hover:shadow-md hover:scale-[1.02] border border-transparent";
   };
 
   return (
-    <div className={`bg-gradient-to-b from-white to-gray-50/50 shadow-xl border-r border-gray-200/60 transition-all duration-300 flex flex-col ${
-      isCollapsed ? 'w-16' : 'w-80'
+    <div className={`bg-gradient-to-br from-gray-50 via-white to-gray-50 shadow-2xl border-r border-gray-200/80 transition-all duration-500 flex flex-col backdrop-blur-sm ${
+      isCollapsed ? 'w-20' : 'w-96'
     }`}>
-      {/* Header */}
-      <div className="p-5 border-b border-gray-200/60 flex items-center justify-between bg-white/80 backdrop-blur-sm">
+      {/* Enhanced Header */}
+      <div className="p-6 border-b border-gray-200/60 flex items-center justify-between bg-white/90 backdrop-blur-md">
         {!isCollapsed && (
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
-              <Smartphone className="w-4 h-4 text-white" />
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-pulse shadow-sm"></div>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Mocupp</h1>
-              <p className="text-xs text-gray-500">Device Mockup Generator</p>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Mocupp
+              </h1>
+              <p className="text-sm text-gray-500 font-medium">Device Mockup Studio</p>
             </div>
           </div>
         )}
@@ -168,38 +179,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 hover:bg-gray-100/80 rounded-lg transition-colors"
+          className="p-3 hover:bg-gray-100/80 rounded-xl transition-all duration-300 hover:scale-110"
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </Button>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Enhanced Navigation Tabs */}
       {!isCollapsed && (
-        <div className="p-3 border-b border-gray-200/60 bg-white/60">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="p-4 border-b border-gray-200/60 bg-gradient-to-r from-white/80 to-gray-50/80">
+          <div className="grid grid-cols-2 gap-3">
             {sidebarSections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={getTabButtonClasses(section)}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {section.icon}
-                    <span className="font-medium text-sm">{section.label}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${activeSection === section.id ? 'bg-white/70' : 'bg-gray-100/70'} transition-colors duration-300`}>
+                      {section.icon}
+                    </div>
+                    <span className="font-semibold text-sm">{section.label}</span>
                   </div>
                   {section.hasContent && (
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <div className="relative">
+                      <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse shadow-sm"></div>
+                      <div className="absolute inset-0 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-ping opacity-75"></div>
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors">
+                <p className="text-xs text-gray-500 leading-relaxed transition-colors duration-300">
                   {section.description}
                 </p>
                 
-                {/* Active indicator */}
+                {/* Enhanced Active indicator */}
                 {activeSection === section.id && (
-                  <div className="absolute inset-0 rounded-xl ring-2 ring-blue-200/50 pointer-events-none"></div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-offset-2 ring-offset-white ring-opacity-60 ring-current pointer-events-none"></div>
                 )}
               </button>
             ))}
@@ -207,29 +223,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto bg-white/40">
+      {/* Enhanced Content Area */}
+      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white/60 to-gray-50/60">
         {!isCollapsed && (
-          <div className="p-5 space-y-6">
+          <div className="p-6 space-y-8">
             {/* Device Selection */}
             {activeSection === 'device' && (
-              <div className="space-y-5 animate-in slide-in-from-right-2 duration-300">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">Device Model</h3>
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
+                      <Smartphone className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Device Selection</h3>
                   </div>
-                  <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-gray-200/60">
                     <DeviceSelector dispatch={dispatch} />
                   </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Current Device</h3>
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <div className="space-y-4">
+                  <h3 className="text-md font-semibold text-gray-800">Current Device</h3>
+                  <div className="p-5 bg-gradient-to-br from-blue-50 via-white to-cyan-50 rounded-2xl border border-blue-200/60 shadow-sm">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-900">
+                        <p className="font-bold text-gray-900 text-md">
                           {currentState.selectedDevice ? 
                             currentState.selectedDevice.split('-').map(word => 
                               word.charAt(0).toUpperCase() + word.slice(1)
@@ -237,12 +255,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             : 'No device selected'
                           }
                         </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Orientation: <span className="font-medium">{currentState.orientation}</span>
+                        <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          Orientation: <span className="font-semibold">{currentState.orientation}</span>
                         </p>
                       </div>
                       {currentState.selectedDevice && (
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <div className="p-2 bg-blue-100 rounded-xl">
+                          <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -250,88 +271,94 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            {/* Upload Section */}
+            {/* Enhanced Upload Section */}
             {activeSection === 'upload' && (
-              <div className="space-y-5 animate-in slide-in-from-right-2 duration-300">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-green-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">Upload Screenshot</h3>
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl">
+                      <ImageIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Media Upload</h3>
                   </div>
-                  <div className="border-2 border-dashed border-gray-300 hover:border-green-400 transition-colors rounded-xl p-6 bg-white">
+                  <div className="border-2 border-dashed border-emerald-300 hover:border-emerald-400 transition-all duration-300 rounded-2xl p-8 bg-gradient-to-br from-white to-emerald-50/30">
                     <FileUpload dispatch={dispatch} />
                   </div>
                 </div>
                 
                 {currentState.uploadedImage && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-gray-900">Current Image</h3>
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Camera className="w-4 h-4 text-green-600" />
+                  <div className="space-y-4">
+                    <h3 className="text-md font-semibold text-gray-800">Current Image</h3>
+                    <div className="p-5 bg-gradient-to-br from-emerald-50 via-white to-teal-50 border border-emerald-200/60 rounded-2xl shadow-sm">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-emerald-100 rounded-xl">
+                          <Camera className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-green-800">Image uploaded successfully</p>
-                          <p className="text-xs text-green-600 mt-1">Ready for device preview</p>
+                          <p className="text-md font-bold text-emerald-800">Image uploaded successfully</p>
+                          <p className="text-sm text-emerald-600 mt-1">Ready for device preview</p>
                         </div>
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <div className="p-2 bg-emerald-100 rounded-xl">
+                          <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Image Editing Controls */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Settings className="w-4 h-4 text-green-600" />
-                        <h4 className="text-sm font-semibold text-gray-900">Image Controls</h4>
+                    {/* Enhanced Image Editing Controls */}
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                          <Settings className="w-5 h-5 text-white" />
+                        </div>
+                        <h4 className="text-md font-bold text-gray-900">Image Controls</h4>
                       </div>
                       
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        {/* Fit Mode Controls */}
-                        <div className="space-y-3">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/60 shadow-lg">
+                        {/* Enhanced Fit Mode Controls */}
+                        <div className="space-y-5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-700">Fit Mode</span>
-                            <div className="flex gap-1">
+                            <span className="text-sm font-bold text-gray-700">Fit Mode</span>
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant={currentState.fitMode === 'cover' ? 'default' : 'outline'}
-                                className="h-8 w-8 p-0"
+                                className="h-10 w-10 p-0 rounded-xl transition-all duration-300"
                                 title="Fill Screen"
                                 onClick={() => handleFitModeChange('cover')}
                               >
-                                <Maximize2 className="h-3 w-3" />
+                                <Maximize2 className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant={currentState.fitMode === 'contain' ? 'default' : 'outline'}
-                                className="h-8 w-8 p-0"
+                                className="h-10 w-10 p-0 rounded-xl transition-all duration-300"
                                 title="Fit Image"
                                 onClick={() => handleFitModeChange('contain')}
                               >
-                                <Minimize2 className="h-3 w-3" />
+                                <Minimize2 className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant={currentState.fitMode === 'smart' ? 'default' : 'outline'}
-                                className="h-8 w-8 p-0"
+                                className="h-10 w-10 p-0 rounded-xl transition-all duration-300"
                                 title="Smart Fit"
                                 onClick={() => handleFitModeChange('smart')}
                               >
-                                <Square className="h-3 w-3" />
+                                <Sparkles className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
                           
-                          {/* Scale Control */}
-                          <div className="space-y-2">
+                          {/* Enhanced Scale Control */}
+                          <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-700">Scale</span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-sm font-bold text-gray-700">Scale</span>
+                              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-lg font-mono">
                                 {Math.round((currentState.imageState?.scale || 1) * 100)}%
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <ZoomOut className="h-3 w-3 text-gray-400" />
+                            <div className="flex items-center gap-3">
+                              <ZoomOut className="h-4 w-4 text-gray-400" />
                               <Slider
                                 value={[currentState.imageState?.scale || 1]}
                                 min={0.5}
@@ -340,35 +367,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 className="flex-1"
                                 onValueChange={(value) => handleScaleChange(value[0])}
                               />
-                              <ZoomIn className="h-3 w-3 text-gray-400" />
+                              <ZoomIn className="h-4 w-4 text-gray-400" />
                             </div>
                           </div>
                           
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 pt-2 border-t border-gray-100">
+                          {/* Enhanced Action Buttons */}
+                          <div className="flex gap-3 pt-4 border-t border-gray-200">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1 h-8 text-xs"
+                              className="flex-1 h-10 text-sm font-medium rounded-xl hover:shadow-md transition-all duration-300"
                               onClick={handleRotate}
                             >
-                              <RotateCw className="h-3 w-3 mr-1" />
+                              <RotateCw className="h-4 w-4 mr-2" />
                               Rotate
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1 h-8 text-xs"
+                              className="flex-1 h-10 text-sm font-medium rounded-xl hover:shadow-md transition-all duration-300"
                               onClick={handleReset}
                             >
-                              <RefreshCw className="h-3 w-3 mr-1" />
+                              <RefreshCw className="h-4 w-4 mr-2" />
                               Reset
                             </Button>
                           </div>
                           
-                          {/* Drag Hint */}
-                          <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 rounded p-2">
-                            <Move className="h-3 w-3" />
+                          {/* Enhanced Drag Hint */}
+                          <div className="flex items-center gap-3 text-sm text-gray-600 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                            <Move className="h-4 w-4 text-gray-500" />
                             <span>Drag the image in the preview to reposition</span>
                           </div>
                         </div>
@@ -379,15 +406,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            {/* View Controls */}
+            {/* Enhanced View Controls */}
             {activeSection === 'view' && (
-              <div className="space-y-5 animate-in slide-in-from-right-2 duration-300">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Layers3 className="w-4 h-4 text-purple-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">View Settings</h3>
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                      <Palette className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Style & View</h3>
                   </div>
-                  <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/60">
                     <EnhancedViewSettings
                       currentAngle={viewAngle}
                       currentPerspective={perspective}
@@ -400,15 +429,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            {/* Projects */}
+            {/* Enhanced Projects */}
             {activeSection === 'projects' && (
-              <div className="space-y-5 animate-in slide-in-from-right-2 duration-300">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="w-4 h-4 text-orange-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">Project Management</h3>
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl">
+                      <FolderOpen className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Project Management</h3>
                   </div>
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/60">
                     <EnhancedProjectManager
                       dispatch={dispatch}
                       currentState={currentState}
@@ -420,9 +451,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Collapsed state icons */}
+        {/* Enhanced Collapsed state icons */}
         {isCollapsed && (
-          <div className="p-3 space-y-3">
+          <div className="p-4 space-y-4">
             {sidebarSections.map((section) => (
               <div key={section.id} className="relative">
                 <button
@@ -430,17 +461,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     setActiveSection(section.id);
                     setIsCollapsed(false);
                   }}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 ${
                     activeSection === section.id
-                      ? 'bg-blue-50 text-blue-700 shadow-sm ring-2 ring-blue-200/50'
-                      : 'hover:bg-gray-100 text-gray-600 hover:scale-105'
+                      ? `${section.bgColor} ${section.textColor} shadow-lg shadow-${section.textColor.split('-')[1]}-500/20`
+                      : 'hover:bg-gray-100 text-gray-600 hover:shadow-md'
                   }`}
                   title={section.label}
                 >
                   {section.icon}
                 </button>
                 {section.hasContent && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white shadow-sm">
+                    <div className="w-full h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-ping opacity-75"></div>
+                  </div>
                 )}
               </div>
             ))}
@@ -448,22 +481,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-gray-200/60 bg-white/80 backdrop-blur-sm">
+      {/* Enhanced Footer Actions */}
+      <div className="p-6 border-t border-gray-200/60 bg-gradient-to-r from-white/90 to-gray-50/90 backdrop-blur-md">
         {!isCollapsed ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Button
               onClick={handleDownloadClick}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] rounded-2xl font-semibold text-white"
               disabled={!currentState.uploadedImage}
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-5 h-5 mr-3" />
               Download Mockup
             </Button>
             
             <div className="text-center">
-              <p className="text-xs text-gray-500">
-                Multiple formats • Custom quality • High resolution • Any angle
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <span className="font-semibold">Multiple formats</span> • <span className="font-semibold">Custom quality</span> • <span className="font-semibold">High resolution</span> • <span className="font-semibold">Any angle</span>
               </p>
             </div>
           </div>
@@ -472,14 +505,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Button
               onClick={handleDownloadClick}
               size="sm"
-              className="w-10 h-10 p-0 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+              className="w-12 h-12 p-0 rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-110 shadow-lg"
               disabled={!currentState.uploadedImage}
               title="Download Mockup"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-5 h-5" />
             </Button>
             {currentState.uploadedImage && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full border-2 border-white animate-pulse shadow-sm"></div>
             )}
           </div>
         )}
